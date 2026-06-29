@@ -216,9 +216,15 @@ export default function HandoverPrintPage() {
 
       <style>{`
         @media print {
-          @page { size: A4 portrait; margin: 12mm 15mm; }
-          body { margin: 0; background: white; }
-          .print-area { max-width: 100%; margin: 0; padding: 0; box-shadow: none; }
+          @page { size: A4 portrait; margin: 15mm 18mm; }
+          body { margin: 0 !important; padding: 0 !important; background: white; }
+          .print-area {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+          }
           img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
