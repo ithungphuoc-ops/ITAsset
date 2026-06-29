@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function GET(req: NextRequest) {
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query
     if (error) throw error
 
-    // Tính quantity_in_use và quantity_in_stock cho mỗi thiết bị
+    // TÃ­nh quantity_in_use vÃ  quantity_in_stock cho má»—i thiáº¿t bá»‹
     const enriched = (data || []).map((d: Record<string, unknown>) => {
       const assignments = (d.assignments as { quantity: number; is_active: boolean; employee: { id: string; full_name: string } | null }[]) || []
       const activeAssignments = assignments.filter(a => a.is_active)
@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ data: enriched })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Lỗi không xác định'
+    const msg = err instanceof Error ? err.message : 'Lá»—i khÃ´ng xÃ¡c Ä‘á»‹nh'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
+

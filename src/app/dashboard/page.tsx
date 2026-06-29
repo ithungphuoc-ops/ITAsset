@@ -21,33 +21,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-
-      const [{ data: devices }, { data: employees }, { data: assignments }] = await Promise.all([
-        supabase.from('devices').select('status, category'),
-        supabase.from('employees').select('id'),
-        supabase.from('assignments')
-          .select('id, assigned_date, is_active, device:devices(brand,model,asset_code,category), employee:employees(full_name,department:departments(name))')
-          .order('created_at', { ascending: false })
-          .limit(8),
-      ])
-
-      if (devices) {
-        const byCategory = (cat: string) => devices.filter(d => d.category === cat).length
-        setStats({
-          total: devices.length,
-          in_use: devices.filter(d => d.status === 'in_use').length,
-          in_stock: devices.filter(d => d.status === 'in_stock').length,
-          broken: devices.filter(d => d.status === 'broken').length,
-          employees: employees?.length || 0,
-          laptop: byCategory('laptop'), monitor: byCategory('monitor'), pc: byCategory('pc'),
-          printer: byCategory('printer'), networking: byCategory('networking'),
-          component: byCategory('component'), ups: byCategory('ups'),
-          peripheral: byCategory('peripheral'), other: byCategory('other'),
-        })
-      }
-      setRecent((assignments as unknown as RecentAssignment[]) || [])
+      const res = await fetch('/api/stats')
+      const json = await res.json()
+      if (json.stats) setStats(json.stats)
+      setRecent(json.assignments || [])
       setLoading(false)
     }
     load()

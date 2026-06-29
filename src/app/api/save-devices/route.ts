@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(req: NextRequest) {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         model: model || 'N/A',
         purchase_date,
         purchase_price: don_gia || null,
-        notes: `Nhập từ báo giá ${thong_tin_mua?.so_bao_gia || ''} - NCC: ${nha_cung_cap?.ten || ''}`,
+        notes: `Nháº­p tá»« bÃ¡o giÃ¡ ${thong_tin_mua?.so_bao_gia || ''} - NCC: ${nha_cung_cap?.ten || ''}`,
         qr_code,
         status: employee_id ? 'in_use' : 'in_stock',
       }).select().single()
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
           })
         }
 
-        // Tạo assignment nếu có employee_id
+        // Táº¡o assignment náº¿u cÃ³ employee_id
         if (employee_id) {
           await supabase.from('assignments').insert({
             device_id: device.id,
@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, saved: saved.length, errors })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Lỗi không xác định'
+    const msg = err instanceof Error ? err.message : 'Lá»—i khÃ´ng xÃ¡c Ä‘á»‹nh'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
+

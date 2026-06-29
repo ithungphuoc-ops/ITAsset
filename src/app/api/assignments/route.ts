@@ -1,23 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendAssignmentEmail } from '@/lib/mailer'
 import QRCode from 'qrcode'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(req: NextRequest) {
   try {
     const { device_id, employee_id, notes, quantity = 1 } = await req.json()
 
-    // Thu hồi assignment cũ nếu có
+    // Thu há»“i assignment cÅ© náº¿u cÃ³
     await supabase.from('assignments')
       .update({ is_active: false, returned_date: new Date().toISOString().split('T')[0] })
       .eq('device_id', device_id).eq('is_active', true)
 
-    // Tạo assignment mới
+    // Táº¡o assignment má»›i
     const { error } = await supabase.from('assignments').insert({
       device_id, employee_id,
       assigned_date: new Date().toISOString().split('T')[0],
@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
     })
     if (error) throw error
 
-    // Cập nhật trạng thái thiết bị
+    // Cáº­p nháº­t tráº¡ng thÃ¡i thiáº¿t bá»‹
     await supabase.from('devices').update({ status: 'in_use' }).eq('id', device_id)
 
-    // Gửi email nếu nhân viên có email
+    // Gá»­i email náº¿u nhÃ¢n viÃªn cÃ³ email
     try {
       const [{ data: device }, { data: employee }] = await Promise.all([
         supabase.from('devices').select('*').eq('id', device_id).single(),
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         })
       }
     } catch (mailErr) {
-      // Không block nếu gửi mail lỗi, chỉ log
+      // KhÃ´ng block náº¿u gá»­i mail lá»—i, chá»‰ log
       console.error('Email error:', mailErr)
     }
 
@@ -83,3 +83,4 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
 }
+
