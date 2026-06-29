@@ -38,37 +38,18 @@ export default function NewDevicePage() {
     setLoading(true)
     setError('')
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const qr_code = `ITASSET-${form.asset_code}-${Date.now()}`
-
-      const { data: device, error: devErr } = await supabase
-        .from('devices')
-        .insert({
-          asset_code: form.asset_code,
+      const res = await fetch('/api/devices/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
           category,
-          brand: form.brand,
-          model: form.model,
-          serial_number: form.serial_number || null,
-          purchase_date: form.purchase_date || null,
-          purchase_price: form.purchase_price ? parseInt(form.purchase_price) : null,
-          warranty_expiry: form.warranty_expiry || null,
-          notes: form.notes || null,
-          qr_code,
-          status: 'in_stock',
-        })
-        .select()
-        .single()
-
-      if (devErr) throw devErr
-
-      if (category === 'laptop') {
-        await supabase.from('device_laptop_specs').insert({ device_id: device.id, ...laptopSpecs })
-      }
-      if (category === 'monitor') {
-        await supabase.from('device_monitor_specs').insert({ device_id: device.id, ...monitorSpecs })
-      }
-
+          laptopSpecs: category === 'laptop' ? laptopSpecs : null,
+          monitorSpecs: category === 'monitor' ? monitorSpecs : null,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
       router.push('/dashboard/devices')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Có lỗi xảy ra')
