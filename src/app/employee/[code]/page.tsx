@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { User, Monitor, Laptop, Cpu, Package, Building2, Printer, MapPin } from 'lucide-react'
 import Link from 'next/link'
@@ -15,7 +15,11 @@ const CATEGORY_ORDER = ['pc', 'laptop', 'monitor', 'peripheral', 'printer', 'oth
 
 export default async function EmployeePublicPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
-  const supabase = await createClient()
+  const supabase = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
 
   // Tìm nhân viên theo employee_code hoặc id
   let { data: employee } = await supabase
@@ -98,7 +102,7 @@ export default async function EmployeePublicPage({ params }: { params: Promise<{
           <div className="mt-3 inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`/api/qr?text=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : 'https://it-asset-pi.vercel.app'}/employee/${employee.employee_code}`)}`}
+              src={`/api/qr?text=${encodeURIComponent(`https://it-asset-pi.vercel.app/employee/${employee.employee_code}`)}`}
               alt="QR"
               className="w-20 h-20 bg-white rounded-lg p-1 mx-auto opacity-80"
             />

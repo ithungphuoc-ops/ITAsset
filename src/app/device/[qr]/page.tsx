@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { Laptop, Monitor, Cpu, Package, User, Calendar, Shield, CheckCircle, AlertTriangle, Building2, ArrowRight, Printer } from 'lucide-react'
 import Link from 'next/link'
@@ -14,7 +14,11 @@ const CATEGORY_ICON: Record<string, React.ElementType> = {
 
 export default async function PublicDevicePage({ params }: { params: Promise<{ qr: string }> }) {
   const { qr } = await params
-  const supabase = await createClient()
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
 
   let { data: device } = await supabase
     .from('devices')
