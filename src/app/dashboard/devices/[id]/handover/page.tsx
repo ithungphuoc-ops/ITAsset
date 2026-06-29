@@ -286,10 +286,20 @@ export default function HandoverPrintPage() {
       <style>{`
         @media print {
           @page { size: A4 portrait; margin: 20mm 20mm 20mm 25mm; }
-          body { margin: 0 !important; padding: 0 !important; }
-          .doc-page { max-width: 100% !important; width: 100% !important; margin: 0 !important; box-shadow: none !important; }
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          body > * { display: none !important; }
+          body > div:last-of-type { display: block !important; }
+          .print\\:p-0 { padding: 0 !important; }
+          .doc-page {
+            max-width: none !important;
+            width: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: white !important;
+          }
           .doc-page > div { padding: 0 !important; }
-          img { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
       `}</style>
     </>
