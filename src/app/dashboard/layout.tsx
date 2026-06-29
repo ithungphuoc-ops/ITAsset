@@ -23,10 +23,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.refresh()
   }
 
+  const isHandover = pathname.endsWith('/handover')
+
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-56 border-r border-gray-800 flex flex-col shrink-0">
+      <aside className={`w-56 border-r border-gray-800 flex flex-col shrink-0 ${isHandover ? 'hidden' : ''}`}>
         <div className="px-5 py-5 border-b border-gray-800 flex items-center gap-3">
           <Link href="/dashboard">
             <img src="/logo.png" alt="ITAsset" className="w-8 h-8 rounded-lg object-contain" />
