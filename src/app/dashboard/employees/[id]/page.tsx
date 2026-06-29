@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, User, Mail, Phone, Building2, Laptop, Monitor, Cpu, Package, Calendar, Pencil, Trash2, Save, X, QrCode, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, Building2, Laptop, Monitor, Cpu, Package, Calendar, Pencil, Trash2, Save, X, QrCode, ExternalLink, Plus, Search } from 'lucide-react'
 import Link from 'next/link'
 
 interface Employee {
@@ -35,6 +35,10 @@ export default function EmployeeDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [form, setForm] = useState({ full_name: '', employee_code: '', email: '', phone: '', department_id: '' })
   const [error, setError] = useState('')
+  const [showAssign, setShowAssign] = useState(false)
+  const [availableDevices, setAvailableDevices] = useState<{ id: string; asset_code: string; brand: string; model: string; category: string }[]>([])
+  const [deviceSearch, setDeviceSearch] = useState('')
+  const [assigning, setAssigning] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -84,6 +88,29 @@ export default function EmployeeDetailPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function openAssign() {
+    setDeviceSearch('')
+    const res = await fetch('/api/devices?status=in_stock&limit=200')
+    const json = await res.json()
+    setAvailableDevices(json.data || [])
+    setShowAssign(true)
+  }
+
+  async function handleAssign(deviceId: string) {
+    setAssigning(true)
+    await fetch('/api/assignments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_id: id, device_id: deviceId, assigned_date: new Date().toISOString().split('T')[0] }),
+    })
+    setAssigning(false)
+    setShowAssign(false)
+    // reload
+    const res = await fetch(`/api/employees/${id}`)
+    const json = await res.json()
+    setAssignments(json.assignments || [])
   }
 
   async function handleDelete() {
@@ -234,12 +261,67 @@ export default function EmployeeDetailPage() {
         </div>
       )}
 
+      {/* Modal gán thiết bị */}
+      {showAssign && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+              <h3 className="font-semibold">Gán thiết bị cho {employee.full_name}</h3>
+              <button onClick={() => setShowAssign(false)} className="text-gray-400 hover:text-white"><X size={18} /></button>
+            </div>
+            <div className="p-4">
+              <div className="relative mb-3">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input value={deviceSearch} onChange={e => setDeviceSearch(e.target.value)}
+                  placeholder="Tìm theo mã, tên thiết bị..."
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="max-h-80 overflow-y-auto space-y-1.5">
+                {availableDevices
+                  .filter(d => {
+                    const q = deviceSearch.toLowerCase()
+                    return !q || d.asset_code.toLowerCase().includes(q) || d.brand.toLowerCase().includes(q) || d.model.toLowerCase().includes(q)
+                  })
+                  .map(d => {
+                    const Icon = CATEGORY_ICON[d.category] || Package
+                    return (
+                      <button key={d.id} onClick={() => handleAssign(d.id)} disabled={assigning}
+                        className="w-full flex items-center gap-3 bg-gray-800 hover:bg-blue-600/20 hover:border-blue-500/50 border border-gray-700 rounded-xl px-4 py-3 transition-colors text-left disabled:opacity-50">
+                        <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center shrink-0">
+                          <Icon size={14} className="text-gray-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">{d.brand} {d.model}</div>
+                          <div className="text-xs text-gray-400 font-mono">{d.asset_code}</div>
+                        </div>
+                        <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded shrink-0">Trong kho</span>
+                      </button>
+                    )
+                  })}
+                {availableDevices.filter(d => {
+                  const q = deviceSearch.toLowerCase()
+                  return !q || d.asset_code.toLowerCase().includes(q) || d.brand.toLowerCase().includes(q) || d.model.toLowerCase().includes(q)
+                }).length === 0 && (
+                  <div className="text-center py-8 text-gray-500 text-sm">Không tìm thấy thiết bị trong kho</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Thiết bị đang dùng */}
       <div className="mb-6">
-        <h3 className="font-semibold mb-3 flex items-center gap-2">
-          Thiết bị đang sử dụng
-          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{activeAssignments.length}</span>
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold flex items-center gap-2">
+            Thiết bị đang sử dụng
+            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{activeAssignments.length}</span>
+          </h3>
+          <button onClick={openAssign}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+            <Plus size={13} /> Gán thiết bị
+          </button>
+        </div>
         {activeAssignments.length === 0 ? (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">
             Chưa được cấp phát thiết bị nào
