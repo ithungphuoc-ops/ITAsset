@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       ])
 
       if (device && employee?.email) {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.startsWith('http://localhost') ? 'https://it-asset-pi.vercel.app' : (process.env.NEXT_PUBLIC_APP_URL || 'https://it-asset-pi.vercel.app')
         const qrUrl = `${baseUrl}/device/${device.qr_code}`
         const qrImageBase64 = await QRCode.toDataURL(qrUrl, {
           width: 300, margin: 2,
