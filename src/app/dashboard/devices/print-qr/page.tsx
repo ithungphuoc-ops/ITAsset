@@ -1,12 +1,12 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Printer } from 'lucide-react'
 import Link from 'next/link'
 
 interface Device { id: string; asset_code: string; brand: string; model: string; category: string }
 
-export default function PrintQRPage() {
+function PrintQRContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [items, setItems] = useState<{ device: Device; qrUrl: string }[]>([])
@@ -90,5 +90,13 @@ export default function PrintQRPage() {
         }
       `}</style>
     </>
+  )
+}
+
+export default function PrintQRPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-400">Đang tải...</div>}>
+      <PrintQRContent />
+    </Suspense>
   )
 }
