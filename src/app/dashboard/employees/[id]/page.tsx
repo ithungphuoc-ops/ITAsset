@@ -253,7 +253,7 @@ export default function EmployeeDetailPage() {
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`/api/qr?text=${encodeURIComponent(`EMPLOYEE-${employee.employee_code}`)}`}
+              src={`/api/qr?text=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : 'https://it-asset-pi.vercel.app'}/employee/${employee.employee_code}`)}`}
               alt="QR Code"
               className="w-28 h-28 bg-white rounded-lg p-1.5"
             />

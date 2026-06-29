@@ -98,11 +98,11 @@ export default async function EmployeePublicPage({ params }: { params: Promise<{
           <div className="mt-3 inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`/api/qr?text=${encodeURIComponent(`EMPLOYEE-${employee.employee_code}`)}`}
+              src={`/api/qr?text=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : 'https://it-asset-pi.vercel.app'}/employee/${employee.employee_code}`)}`}
               alt="QR"
               className="w-20 h-20 bg-white rounded-lg p-1 mx-auto opacity-80"
             />
-            <p className="text-xs text-gray-600 mt-1">EMPLOYEE-{employee.employee_code}</p>
+            <p className="text-xs text-gray-600 mt-1">{employee.employee_code}</p>
           </div>
         </div>
 
