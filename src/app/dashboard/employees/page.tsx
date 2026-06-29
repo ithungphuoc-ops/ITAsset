@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Search, Plus, Upload, User, Building2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Employee } from '@/lib/types'
+import { useRole } from '@/lib/hooks/useRole'
 
 // Chuẩn hóa tiếng Việt — bỏ dấu, lowercase
 function normalizeVi(s: string) {
@@ -10,6 +11,7 @@ function normalizeVi(s: string) {
 }
 
 export default function EmployeesPage() {
+  const { isAdmin } = useRole()
   const [allEmployees, setAllEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -47,18 +49,20 @@ export default function EmployeesPage() {
             {loading ? '...' : `${employees.length} nhân viên · ${Object.keys(grouped).length} phòng ban`}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/dashboard/employees/import"
-            className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
-            <Upload size={15} />
-            Import Excel
-          </Link>
-          <Link href="/dashboard/employees/new"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            <Plus size={15} />
-            Thêm nhân viên
-          </Link>
-        </div>
+        {isAdmin && (
+          <div className="flex gap-2">
+            <Link href="/dashboard/employees/import"
+              className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
+              <Upload size={15} />
+              Import Excel
+            </Link>
+            <Link href="/dashboard/employees/new"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+              <Plus size={15} />
+              Thêm nhân viên
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Search */}

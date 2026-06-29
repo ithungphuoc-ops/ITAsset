@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Mail, Phone, Building2, Laptop, Monitor, Cpu, Package, Calendar, Pencil, Trash2, Save, X, QrCode, ExternalLink, Plus, Search } from 'lucide-react'
 import Link from 'next/link'
+import { useRole } from '@/lib/hooks/useRole'
 
 interface Employee {
   id: string; full_name: string; employee_code?: string
@@ -35,6 +36,7 @@ export default function EmployeeDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [form, setForm] = useState({ full_name: '', employee_code: '', email: '', phone: '', department_id: '' })
   const [error, setError] = useState('')
+  const { isAdmin } = useRole()
   const [showAssign, setShowAssign] = useState(false)
   const [availableDevices, setAvailableDevices] = useState<{ id: string; asset_code: string; brand: string; model: string; category: string }[]>([])
   const [deviceSearch, setDeviceSearch] = useState('')
@@ -138,7 +140,7 @@ export default function EmployeeDetailPage() {
         </Link>
         <h1 className="text-2xl font-bold">Chi tiết nhân viên</h1>
         <div className="ml-auto flex gap-2">
-          {!editing && (
+          {!editing && isAdmin && (
             <>
               <button onClick={() => setEditing(true)}
                 className="flex items-center gap-1.5 border border-gray-700 hover:border-blue-500 hover:text-blue-400 px-4 py-2 rounded-lg text-sm transition-colors">
@@ -317,10 +319,12 @@ export default function EmployeeDetailPage() {
             Thiết bị đang sử dụng
             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{activeAssignments.length}</span>
           </h3>
-          <button onClick={openAssign}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
-            <Plus size={13} /> Gán thiết bị
-          </button>
+          {isAdmin && (
+            <button onClick={openAssign}
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+              <Plus size={13} /> Gán thiết bị
+            </button>
+          )}
         </div>
         {activeAssignments.length === 0 ? (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center text-gray-500 text-sm">

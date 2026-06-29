@@ -33,12 +33,6 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set('redirect', pathname)
       return NextResponse.redirect(url)
     }
-    // Nhân viên không được vào dashboard, chỉ admin
-    if (role === 'employee') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/my-devices'
-      return NextResponse.redirect(url)
-    }
   }
 
   // Đã login rồi mà vào /login → redirect theo role

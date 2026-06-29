@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Search, Plus, Upload, Monitor, Laptop, Cpu, Package, Printer, Wifi, Zap } from 'lucide-react'
 import Link from 'next/link'
 import type { DeviceStatus, DeviceCategory } from '@/lib/types'
+import { useRole } from '@/lib/hooks/useRole'
 
 function normalizeVi(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, m => m === 'đ' ? 'd' : 'D').toLowerCase()
@@ -34,6 +35,7 @@ const CATEGORY_ICON: Record<DeviceCategory, React.ElementType> = {
 }
 
 export default function DevicesPage() {
+  const { isAdmin } = useRole()
   const [allDevices, setAllDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -71,16 +73,18 @@ export default function DevicesPage() {
           <h1 className="text-2xl font-bold">Thiết bị</h1>
           <p className="text-gray-400 text-sm mt-1">{loading ? '...' : `${devices.length} thiết bị`}</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/dashboard/devices/import" className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
-            <Upload size={16} />
-            Import Excel / PDF
-          </Link>
-          <Link href="/dashboard/devices/new" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            <Plus size={16} />
-            Thêm thiết bị
-          </Link>
-        </div>
+        {isAdmin && (
+          <div className="flex gap-2">
+            <Link href="/dashboard/devices/import" className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
+              <Upload size={16} />
+              Import Excel / PDF
+            </Link>
+            <Link href="/dashboard/devices/new" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+              <Plus size={16} />
+              Thêm thiết bị
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
