@@ -28,7 +28,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className="w-56 border-r border-gray-800 flex flex-col shrink-0">
         <div className="px-5 py-5 border-b border-gray-800 flex items-center gap-3">
-          <img src="/logo.png" alt="ITAsset" className="w-8 h-8 rounded-lg object-contain" />
+          <Link href="/dashboard">
+            <img src="/logo.png" alt="ITAsset" className="w-8 h-8 rounded-lg object-contain" />
+          </Link>
           <span className="font-semibold tracking-tight">ITAsset</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">

@@ -134,7 +134,10 @@ export default function EmployeesPage() {
 function EmployeeRow({ emp }: { emp: Employee }) {
   const dept = emp.department as { name: string } | undefined
   return (
-    <tr className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+    <tr
+      className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors cursor-pointer"
+      onClick={() => window.location.href = `/dashboard/employees/${emp.id}`}
+    >
       <td className="px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-full bg-blue-600/20 flex items-center justify-center shrink-0 text-blue-400 text-xs font-medium">
@@ -146,11 +149,7 @@ function EmployeeRow({ emp }: { emp: Employee }) {
       <td className="px-4 py-2.5 font-mono text-xs text-gray-400">{emp.employee_code || '—'}</td>
       <td className="px-4 py-2.5 text-xs text-gray-400">{dept?.name || '—'}</td>
       <td className="px-4 py-2.5 text-xs text-gray-500">{emp.email || '—'}</td>
-      <td className="px-4 py-2.5 text-right">
-        <Link href={`/dashboard/employees/${emp.id}`} className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
-          Chi tiết →
-        </Link>
-      </td>
+      <td className="px-4 py-2.5 text-right text-xs text-gray-600">→</td>
     </tr>
   )
 }

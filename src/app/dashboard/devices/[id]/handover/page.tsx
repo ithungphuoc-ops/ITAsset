@@ -43,7 +43,7 @@ export default function HandoverPrintPage() {
       setAssignment(json.active_assignment || null)
 
       const QRCode = (await import('qrcode')).default
-      const url = `${window.location.origin}/device/${json.data.qr_code}`
+      const url = `${window.location.origin}/device/${json.data.id}`
       const dataUrl = await QRCode.toDataURL(url, { width: 150, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
       setQrDataUrl(dataUrl)
       setLoading(false)
@@ -82,83 +82,107 @@ export default function HandoverPrintPage() {
       {/* Preview wrapper */}
       <div className="print:p-0 p-8 bg-gray-950 min-h-screen print:bg-white">
         {/* Printable content */}
-        <div ref={printRef} className="print-area bg-white text-black max-w-[794px] mx-auto p-10 shadow-lg print:shadow-none">
+        <div ref={printRef} className="print-area bg-white text-black max-w-[794px] mx-auto px-10 py-8 shadow-lg print:shadow-none">
 
           {/* Header */}
-          <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-gray-800">
-            <div>
-              <div className="text-xs font-bold tracking-widest text-gray-500 uppercase mb-1">Công ty TNHH HPCONS</div>
-              <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">Biên bản bàn giao thiết bị</h1>
-              <div className="text-sm text-gray-500 mt-1">Ngày lập: {today}</div>
+          <div className="flex items-start justify-between mb-4 pb-4 border-b-2 border-gray-800">
+            <div className="flex items-start gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="HP Cons" className="w-14 h-14 object-contain shrink-0" />
+              <div>
+                <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-0.5 leading-tight">
+                  Công ty cổ phần xây dựng<br />công nghiệp Hưng Phước
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 uppercase tracking-wide leading-tight">Biên bản bàn giao thiết bị</h1>
+                <div className="text-xs text-gray-500 mt-0.5">Ngày lập: {today}</div>
+              </div>
             </div>
             {qrDataUrl && (
               <div className="text-center">
-                <img src={qrDataUrl} alt="QR Code" className="w-24 h-24 border border-gray-200" />
-                <div className="text-xs text-gray-400 mt-1 font-mono">{device.asset_code}</div>
+                <img src={qrDataUrl} alt="QR Code" className="w-20 h-20 border border-gray-200" />
+                <div className="text-[10px] text-gray-400 mt-0.5 font-mono">{device.asset_code}</div>
               </div>
             )}
           </div>
 
           {/* Người nhận */}
-          <section className="mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 pb-1 border-b border-gray-200">
+          <section className="mb-4">
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-2 pb-1 border-b border-gray-200">
               I. Thông tin người nhận
             </h2>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-              <Row label="Họ và tên" value={emp?.full_name || '___________________'} />
-              <Row label="Mã nhân viên" value={emp?.employee_code || '___________________'} />
-              <Row label="Phòng ban" value={emp?.department?.name || '___________________'} />
-              <Row label="Chức vụ" value={emp?.position || '___________________'} />
-              <Row label="Email" value={emp?.email || '___________________'} />
-              <Row label="Điện thoại" value={emp?.phone || '___________________'} />
-            </div>
+            <table className="w-full text-sm border-collapse">
+              <tbody>
+                <tr>
+                  <TCell label="Họ và tên" value={emp?.full_name || '_______________'} />
+                  <TCell label="Mã nhân viên" value={emp?.employee_code || '_______________'} />
+                </tr>
+                <tr>
+                  <TCell label="Phòng ban" value={emp?.department?.name || '_______________'} />
+                  <TCell label="Chức vụ" value={emp?.position || '_______________'} />
+                </tr>
+                <tr>
+                  <TCell label="Email" value={emp?.email || '_______________'} />
+                  <TCell label="Điện thoại" value={emp?.phone || '_______________'} />
+                </tr>
+              </tbody>
+            </table>
           </section>
 
           {/* Thiết bị */}
-          <section className="mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 pb-1 border-b border-gray-200">
+          <section className="mb-4">
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-2 pb-1 border-b border-gray-200">
               II. Thông tin thiết bị bàn giao
             </h2>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-              <Row label="Loại thiết bị" value={CATEGORY_LABEL[device.category] || device.category} />
-              <Row label="Mã tài sản" value={device.asset_code} bold />
-              <Row label="Hãng sản xuất" value={device.brand} />
-              <Row label="Model" value={device.model} />
-              <Row label="Serial Number" value={device.serial_number || '___________________'} />
-              {device.purchase_date && <Row label="Ngày mua" value={new Date(device.purchase_date).toLocaleDateString('vi-VN')} />}
-              {device.warranty_expiry && <Row label="Bảo hành đến" value={new Date(device.warranty_expiry).toLocaleDateString('vi-VN')} />}
-            </div>
+            <table className="w-full text-sm border-collapse">
+              <tbody>
+                <tr>
+                  <TCell label="Loại thiết bị" value={CATEGORY_LABEL[device.category] || device.category} />
+                  <TCell label="Mã tài sản" value={device.asset_code} bold />
+                </tr>
+                <tr>
+                  <TCell label="Hãng sản xuất" value={device.brand} />
+                  <TCell label="Model" value={device.model} />
+                </tr>
+                <tr>
+                  <TCell label="Serial Number" value={device.serial_number || '_______________'} />
+                  <TCell label="Ngày mua" value={device.purchase_date ? new Date(device.purchase_date).toLocaleDateString('vi-VN') : '_______________'} />
+                </tr>
+                <tr>
+                  <TCell label="Bảo hành đến" value={device.warranty_expiry ? new Date(device.warranty_expiry).toLocaleDateString('vi-VN') : '_______________'} />
+                  <TCell label="Ngày bàn giao" value={assignment ? new Date(assignment.assigned_date).toLocaleDateString('vi-VN') : today} />
+                </tr>
+              </tbody>
+            </table>
 
-            {/* Cấu hình laptop */}
             {device.category === 'laptop' && device.laptop_specs && (
-              <div className="mt-4">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Cấu hình:</div>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm bg-gray-50 p-3 rounded">
-                  {device.laptop_specs.cpu && <Row label="CPU" value={device.laptop_specs.cpu} />}
-                  {device.laptop_specs.ram && <Row label="RAM" value={device.laptop_specs.ram} />}
-                  {device.laptop_specs.storage && <Row label="Ổ cứng" value={device.laptop_specs.storage} />}
-                  {device.laptop_specs.display && <Row label="Màn hình" value={device.laptop_specs.display} />}
-                  {device.laptop_specs.os && <Row label="HĐH" value={device.laptop_specs.os} />}
-                  {device.laptop_specs.gpu && <Row label="GPU" value={device.laptop_specs.gpu} />}
-                </div>
-              </div>
-            )}
-
-            {/* Ghi chú thiết bị */}
-            {device.notes && (
-              <div className="mt-3 text-sm">
-                <span className="text-gray-500">Ghi chú: </span>
-                <span>{device.notes}</span>
+              <div className="mt-2 bg-gray-50 p-2 rounded text-sm">
+                <div className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Cấu hình:</div>
+                <table className="w-full border-collapse">
+                  <tbody>
+                    {(device.laptop_specs.cpu || device.laptop_specs.ram) && (
+                      <tr>
+                        {device.laptop_specs.cpu && <TCell label="CPU" value={device.laptop_specs.cpu} />}
+                        {device.laptop_specs.ram && <TCell label="RAM" value={device.laptop_specs.ram} />}
+                      </tr>
+                    )}
+                    {(device.laptop_specs.storage || device.laptop_specs.os) && (
+                      <tr>
+                        {device.laptop_specs.storage && <TCell label="Ổ cứng" value={device.laptop_specs.storage} />}
+                        {device.laptop_specs.os && <TCell label="HĐH" value={device.laptop_specs.os} />}
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>
 
           {/* Điều khoản */}
-          <section className="mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3 pb-1 border-b border-gray-200">
+          <section className="mb-4">
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-2 pb-1 border-b border-gray-200">
               III. Điều khoản bàn giao
             </h2>
-            <ol className="text-sm text-gray-700 space-y-1.5 list-decimal list-inside">
+            <ol className="text-xs text-gray-700 space-y-1 list-decimal list-inside leading-relaxed">
               <li>Người nhận cam kết sử dụng thiết bị đúng mục đích công việc, không sử dụng cho mục đích cá nhân.</li>
               <li>Người nhận có trách nhiệm bảo quản thiết bị, tránh để hư hỏng, mất mát do lỗi chủ quan.</li>
               <li>Trường hợp hư hỏng do lỗi chủ quan, người nhận chịu trách nhiệm bồi thường theo quy định công ty.</li>
@@ -167,54 +191,46 @@ export default function HandoverPrintPage() {
             </ol>
           </section>
 
-          {/* Ngày bàn giao */}
-          {assignment && (
-            <div className="mb-6 text-sm text-gray-600">
-              <span className="font-medium">Ngày bàn giao: </span>
-              {new Date(assignment.assigned_date).toLocaleDateString('vi-VN')}
-              {assignment.notes && <span className="ml-4"><span className="font-medium">Ghi chú: </span>{assignment.notes}</span>}
-            </div>
-          )}
-
           {/* Chữ ký */}
-          <section className="mt-10">
+          <section className="mt-6">
             <div className="grid grid-cols-2 gap-16 text-center text-sm">
               <div>
-                <div className="font-semibold text-gray-800 mb-1">Người bàn giao</div>
-                <div className="text-xs text-gray-500 mb-16">(Ký, ghi rõ họ tên)</div>
-                <div className="border-t border-gray-400 pt-2 text-gray-600">Đại diện Phòng IT</div>
+                <div className="font-semibold text-gray-800 mb-0.5">Người bàn giao</div>
+                <div className="text-xs text-gray-500 mb-12">(Ký, ghi rõ họ tên)</div>
+                <div className="border-t border-gray-400 pt-1.5 text-gray-600 text-sm">Đại diện Phòng IT</div>
               </div>
               <div>
-                <div className="font-semibold text-gray-800 mb-1">Người nhận</div>
-                <div className="text-xs text-gray-500 mb-16">(Ký, ghi rõ họ tên)</div>
-                <div className="border-t border-gray-400 pt-2 text-gray-600">{emp?.full_name || '___________________'}</div>
+                <div className="font-semibold text-gray-800 mb-0.5">Người nhận</div>
+                <div className="text-xs text-gray-500 mb-12">(Ký, ghi rõ họ tên)</div>
+                <div className="border-t border-gray-400 pt-1.5 text-gray-600 text-sm">{emp?.full_name || '___________________'}</div>
               </div>
             </div>
           </section>
 
           {/* Footer */}
-          <div className="mt-10 pt-4 border-t border-gray-200 text-xs text-gray-400 text-center">
-            Biên bản được lập thành 02 bản, mỗi bên giữ 01 bản. · Hệ thống ITAsset · {today}
+          <div className="mt-4 pt-3 border-t border-gray-200 text-[10px] text-gray-400 text-center">
+            Biên bản được lập thành 02 bản, mỗi bên giữ 01 bản · Hệ thống ITAsset · {today}
           </div>
         </div>
       </div>
 
       <style>{`
         @media print {
-          @page { size: A4; margin: 0; }
+          @page { size: A4 portrait; margin: 12mm 15mm; }
           body { margin: 0; background: white; }
-          .print-area { max-width: 100%; margin: 0; padding: 20mm 18mm; box-shadow: none; }
+          .print-area { max-width: 100%; margin: 0; padding: 0; box-shadow: none; }
+          img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
     </>
   )
 }
 
-function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+function TCell({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
-    <div className="flex gap-2">
-      <span className="text-gray-500 shrink-0 w-32">{label}:</span>
-      <span className={bold ? 'font-bold' : 'font-medium text-gray-800'}>{value}</span>
-    </div>
+    <td className="py-1 pr-6 align-top w-1/2">
+      <span className="text-gray-500 text-xs mr-1">{label}:</span>
+      <span className={`text-sm ${bold ? 'font-bold' : 'font-medium text-gray-800'}`}>{value}</span>
+    </td>
   )
 }
