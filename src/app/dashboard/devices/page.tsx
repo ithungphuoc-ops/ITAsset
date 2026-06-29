@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Search, Plus, Upload, Monitor, Laptop, Cpu, Package, Printer, Wifi, Zap } from 'lucide-react'
+import { Search, Plus, Upload, Monitor, Laptop, Cpu, Package, Printer, Wifi, Zap, QrCode, FileSpreadsheet } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { DeviceStatus, DeviceCategory } from '@/lib/types'
 import { useRole } from '@/lib/hooks/useRole'
 
@@ -36,11 +37,35 @@ const CATEGORY_ICON: Record<DeviceCategory, React.ElementType> = {
 
 export default function DevicesPage() {
   const { isAdmin } = useRole()
+  const router = useRouter()
   const [allDevices, setAllDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterCategory, setFilterCategory] = useState<DeviceCategory | ''>('')
   const [filterStatus, setFilterStatus] = useState<DeviceStatus | ''>('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [exporting, setExporting] = useState(false)
+
+  function toggleSelect(id: string) {
+    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+  }
+  function toggleAll() {
+    setSelected(prev => prev.size === devices.length ? new Set() : new Set(devices.map(d => d.id)))
+  }
+  async function handleExport() {
+    setExporting(true)
+    const res = await fetch('/api/devices/export')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `ThietBi_ITAsset_${new Date().toISOString().split('T')[0]}.xlsx`
+    a.click(); URL.revokeObjectURL(url)
+    setExporting(false)
+  }
+  function handlePrintQR() {
+    const ids = Array.from(selected).join(',')
+    router.push(`/dashboard/devices/print-qr?ids=${ids}`)
+  }
 
   const fetchDevices = useCallback(async () => {
     const params = new URLSearchParams()
@@ -73,18 +98,23 @@ export default function DevicesPage() {
           <h1 className="text-2xl font-bold">Thiết bị</h1>
           <p className="text-gray-400 text-sm mt-1">{loading ? '...' : `${devices.length} thiết bị`}</p>
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <Link href="/dashboard/devices/import" className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
-              <Upload size={16} />
-              Import Excel / PDF
-            </Link>
-            <Link href="/dashboard/devices/new" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-              <Plus size={16} />
-              Thêm thiết bị
-            </Link>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <button onClick={handleExport} disabled={exporting}
+            className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors disabled:opacity-50">
+            <FileSpreadsheet size={16} />
+            {exporting ? 'Đang xuất...' : 'Export Excel'}
+          </button>
+          {isAdmin && (
+            <>
+              <Link href="/dashboard/devices/import" className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
+                <Upload size={16} /> Import
+              </Link>
+              <Link href="/dashboard/devices/new" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                <Plus size={16} /> Thêm thiết bị
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -111,11 +141,32 @@ export default function DevicesPage() {
         </select>
       </div>
 
+      {/* Action bar khi có chọn */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-blue-600/10 border border-blue-500/30 rounded-xl">
+          <span className="text-sm text-blue-300 flex-1">Đã chọn <strong>{selected.size}</strong> thiết bị</span>
+          <button onClick={handlePrintQR}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <QrCode size={15} /> In QR ({selected.size})
+          </button>
+          <button onClick={() => setSelected(new Set())}
+            className="text-sm text-gray-400 hover:text-white border border-gray-700 px-3 py-2 rounded-lg transition-colors">
+            Bỏ chọn
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-800 text-gray-400 text-left">
+              <th className="px-4 py-3 w-10">
+                <input type="checkbox"
+                  checked={devices.length > 0 && selected.size === devices.length}
+                  onChange={toggleAll}
+                  className="rounded border-gray-600 bg-gray-800 accent-blue-500 cursor-pointer" />
+              </th>
               <th className="px-4 py-3 font-medium">Mã tài sản</th>
               <th className="px-4 py-3 font-medium">Loại</th>
               <th className="px-4 py-3 font-medium">Hãng / Model</th>
@@ -129,10 +180,10 @@ export default function DevicesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="px-4 py-16 text-center text-gray-500">Đang tải...</td></tr>
+              <tr><td colSpan={10} className="px-4 py-16 text-center text-gray-500">Đang tải...</td></tr>
             ) : devices.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-16 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-16 text-center text-gray-500">
                   <Package size={32} className="mx-auto mb-3 opacity-30" />
                   <p>Chưa có thiết bị nào</p>
                   <Link href="/dashboard/devices/new" className="inline-block mt-3 text-blue-400 hover:text-blue-300 text-sm">
@@ -145,9 +196,17 @@ export default function DevicesPage() {
               const isWarrantyExpired = device.warranty_expiry && new Date(device.warranty_expiry) < new Date()
               return (
                 <tr key={device.id}
-                  className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors cursor-pointer"
-                  onClick={() => window.location.href = `/dashboard/devices/${device.id}`}
+                  className={`border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors cursor-pointer ${selected.has(device.id) ? 'bg-blue-600/5' : ''}`}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return
+                    window.location.href = `/dashboard/devices/${device.id}`
+                  }}
                 >
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={selected.has(device.id)}
+                      onChange={() => toggleSelect(device.id)}
+                      className="rounded border-gray-600 bg-gray-800 accent-blue-500 cursor-pointer" />
+                  </td>
                   <td className="px-4 py-3 font-mono text-blue-400 text-sm">{device.asset_code}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 text-gray-300">

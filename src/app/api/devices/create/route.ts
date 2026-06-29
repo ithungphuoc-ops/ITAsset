@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const {
     asset_code, category, brand, model,
     serial_number, purchase_date, purchase_price,
-    warranty_expiry, notes, laptopSpecs, monitorSpecs,
+    warranty_expiry, notes, laptopSpecs, monitorSpecs, pcSpecs,
   } = body
 
   if (!asset_code || !category || !brand || !model) {
@@ -46,6 +46,9 @@ export async function POST(req: NextRequest) {
   }
   if (monitorSpecs && Object.values(monitorSpecs).some(v => v)) {
     await supabase.from('device_monitor_specs').insert({ device_id: device.id, ...monitorSpecs })
+  }
+  if (pcSpecs && Object.values(pcSpecs).some(v => v)) {
+    await supabase.from('device_laptop_specs').insert({ device_id: device.id, ...pcSpecs })
   }
 
   return NextResponse.json({ data: device })

@@ -29,6 +29,7 @@ export default function NewDevicePage() {
   })
   const [laptopSpecs, setLaptopSpecs] = useState({ cpu: '', ram: '', storage: '', display: '', os: '', gpu: '' })
   const [monitorSpecs, setMonitorSpecs] = useState({ screen_size: '', resolution: '', panel_type: '', refresh_rate: '' })
+  const [pcSpecs, setPcSpecs] = useState({ cpu: '', ram: '', storage: '', gpu: '', os: '', main_board: '', power_supply: '' })
   const [error, setError] = useState('')
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
@@ -46,6 +47,7 @@ export default function NewDevicePage() {
           category,
           laptopSpecs: category === 'laptop' ? laptopSpecs : null,
           monitorSpecs: category === 'monitor' ? monitorSpecs : null,
+          pcSpecs: category === 'pc' ? pcSpecs : null,
         }),
       })
       const json = await res.json()
@@ -127,6 +129,22 @@ export default function NewDevicePage() {
               <Field label="Màn hình" placeholder="VD: 14 inch FHD IPS" value={laptopSpecs.display} onChange={v => setLaptopSpecs(s => ({ ...s, display: v }))} />
               <Field label="Hệ điều hành" placeholder="VD: Windows 11 Pro" value={laptopSpecs.os} onChange={v => setLaptopSpecs(s => ({ ...s, os: v }))} />
               <Field label="GPU (nếu có)" placeholder="VD: NVIDIA MX450" value={laptopSpecs.gpu} onChange={v => setLaptopSpecs(s => ({ ...s, gpu: v }))} />
+            </div>
+          </div>
+        )}
+
+        {/* Cấu hình PC */}
+        {category === 'pc' && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="font-semibold mb-4">Cấu hình PC</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="CPU" placeholder="VD: Intel Core i5-12400" value={pcSpecs.cpu} onChange={v => setPcSpecs(s => ({ ...s, cpu: v }))} />
+              <Field label="RAM" placeholder="VD: 16GB DDR4 3200MHz" value={pcSpecs.ram} onChange={v => setPcSpecs(s => ({ ...s, ram: v }))} />
+              <Field label="Ổ cứng" placeholder="VD: 512GB SSD NVMe" value={pcSpecs.storage} onChange={v => setPcSpecs(s => ({ ...s, storage: v }))} />
+              <Field label="GPU (nếu có)" placeholder="VD: NVIDIA GTX 1650" value={pcSpecs.gpu} onChange={v => setPcSpecs(s => ({ ...s, gpu: v }))} />
+              <Field label="Mainboard" placeholder="VD: Gigabyte B660M DS3H" value={pcSpecs.main_board} onChange={v => setPcSpecs(s => ({ ...s, main_board: v }))} />
+              <Field label="Nguồn (PSU)" placeholder="VD: Corsair 550W 80+ Bronze" value={pcSpecs.power_supply} onChange={v => setPcSpecs(s => ({ ...s, power_supply: v }))} />
+              <Field label="Hệ điều hành" placeholder="VD: Windows 11 Pro" value={pcSpecs.os} onChange={v => setPcSpecs(s => ({ ...s, os: v }))} className="col-span-2" />
             </div>
           </div>
         )}
