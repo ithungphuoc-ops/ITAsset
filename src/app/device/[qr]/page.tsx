@@ -20,11 +20,21 @@ export default async function PublicDevicePage({ params }: { params: Promise<{ q
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
+  // Thử lookup theo id → qr_code → asset_code
   let { data: device } = await supabase
     .from('devices')
     .select('*, laptop_specs:device_laptop_specs(*), monitor_specs:device_monitor_specs(*)')
-    .eq('qr_code', qr)
+    .eq('id', qr)
     .maybeSingle()
+
+  if (!device) {
+    const { data: byQr } = await supabase
+      .from('devices')
+      .select('*, laptop_specs:device_laptop_specs(*), monitor_specs:device_monitor_specs(*)')
+      .eq('qr_code', qr)
+      .maybeSingle()
+    device = byQr
+  }
 
   if (!device) {
     const { data: byAsset } = await supabase

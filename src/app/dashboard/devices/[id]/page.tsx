@@ -50,8 +50,7 @@ export default function DeviceDetailPage() {
 
       // Generate QR code
       const QRCode = (await import('qrcode')).default
-      const qrKey = dev.qr_code || dev.asset_code
-      const url = `${window.location.origin}/device/${encodeURIComponent(qrKey)}`
+      const url = `${window.location.origin}/device/${dev.id}`
       const dataUrl = await QRCode.toDataURL(url, { width: 200, margin: 2, color: { dark: '#ffffff', light: '#111827' } })
       setQrDataUrl(dataUrl)
 
