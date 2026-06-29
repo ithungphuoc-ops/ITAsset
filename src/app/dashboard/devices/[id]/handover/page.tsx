@@ -88,7 +88,7 @@ export default function HandoverPrintPage() {
           <div className="flex items-start justify-between mb-4 pb-4 border-b-2 border-gray-800">
             <div className="flex items-start gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="HP Cons" className="w-14 h-14 object-contain shrink-0" />
+              <img src="/logo-company.png" alt="HP Cons" className="w-14 h-14 object-contain shrink-0" />
               <div>
                 <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-0.5 leading-tight">
                   Công ty cổ phần xây dựng<br />công nghiệp Hưng Phước

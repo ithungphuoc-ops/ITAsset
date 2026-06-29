@@ -144,7 +144,10 @@ export default function DevicesPage() {
               const Icon = CATEGORY_ICON[device.category]
               const isWarrantyExpired = device.warranty_expiry && new Date(device.warranty_expiry) < new Date()
               return (
-                <tr key={device.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                <tr key={device.id}
+                  className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors cursor-pointer"
+                  onClick={() => window.location.href = `/dashboard/devices/${device.id}`}
+                >
                   <td className="px-4 py-3 font-mono text-blue-400 text-sm">{device.asset_code}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 text-gray-300">
