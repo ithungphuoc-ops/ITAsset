@@ -25,15 +25,15 @@ const CATEGORY_LABEL: Record<string, string> = {
 const S: Record<string, React.CSSProperties> = {
   page: {
     fontFamily: "'Times New Roman', Times, serif",
-    fontSize: 13,
+    fontSize: 12,
     color: '#000',
     background: '#fff',
-    lineHeight: 1.8,
+    lineHeight: 1.55,
     position: 'relative',
   },
   bold: { fontWeight: 'bold' },
   center: { textAlign: 'center' },
-  p: { margin: '3px 0' },
+  p: { margin: '2px 0' },
   underline: { textDecoration: 'underline', fontWeight: 'bold' },
 }
 
@@ -114,7 +114,7 @@ export default function HandoverPrintPage() {
       {/* Preview */}
       <div className="print:p-0 py-10 px-4 bg-gray-200 min-h-screen print:bg-white">
         <div className="doc-page bg-white mx-auto" style={{ maxWidth: 740, ...S.page }}>
-          <div style={{ padding: '20mm 20mm 20mm 25mm' }}>
+          <div style={{ padding: '14mm 18mm 14mm 22mm' }}>
 
             {/* HEADER */}
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 2, color: '#000' }}>
@@ -142,11 +142,11 @@ export default function HandoverPrintPage() {
             </table>
 
             {/* TIÊU ĐỀ */}
-            <div style={{ textAlign: 'center', margin: '14px 0 10px', color: '#000' }}>
-              <p style={{ ...S.bold, fontSize: 16, textTransform: 'uppercase', margin: 0, letterSpacing: 0.5 }}>
+            <div style={{ textAlign: 'center', margin: '8px 0 6px', color: '#000' }}>
+              <p style={{ ...S.bold, fontSize: 14, textTransform: 'uppercase', margin: 0, letterSpacing: 0.5 }}>
                 BIÊN BẢN BÀN GIAO THIẾT BỊ
               </p>
-              <p style={{ fontSize: 12, fontStyle: 'italic', margin: '3px 0 0' }}>
+              <p style={{ fontSize: 11, fontStyle: 'italic', margin: '2px 0 0' }}>
                 (Bàn giao thiết bị công nghệ thông tin)
               </p>
             </div>
@@ -158,13 +158,13 @@ export default function HandoverPrintPage() {
             </p>
 
             {/* BÊN GIAO */}
-            <p style={{ ...S.p, ...S.underline, marginTop: 8, color: '#000' }}>BÊN GIAO (Bên A): Phòng Công nghệ Thông tin</p>
+            <p style={{ ...S.p, ...S.underline, marginTop: 4, color: '#000' }}>BÊN GIAO (Bên A): Phòng Công nghệ Thông tin</p>
             <p style={{ ...S.p, paddingLeft: 20, color: '#000' }}>- Đại diện: Trưởng phòng CNTT &emsp; Chức vụ: Trưởng phòng CNTT</p>
             <p style={{ ...S.p, paddingLeft: 20, color: '#000' }}>- Đơn vị: Công ty Cổ phần Xây dựng Công nghiệp Hưng Phước</p>
 
             {/* BÊN NHẬN */}
-            <p style={{ ...S.p, ...S.underline, marginTop: 6, color: '#000' }}>BÊN NHẬN (Bên B):</p>
-            <table style={{ width: '100%', borderCollapse: 'collapse', color: '#000', fontSize: 13 }}>
+            <p style={{ ...S.p, ...S.underline, marginTop: 4, color: '#000' }}>BÊN NHẬN (Bên B):</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', color: '#000', fontSize: 12 }}>
               <tbody>
                 <tr>
                   <td style={{ padding: '1px 0 1px 20px', width: '50%' }}>
@@ -193,44 +193,41 @@ export default function HandoverPrintPage() {
               </tbody>
             </table>
 
-            <p style={{ ...S.p, marginTop: 6, color: '#000' }}>
+            <p style={{ ...S.p, marginTop: 4, color: '#000' }}>
               Hai bên thống nhất lập biên bản bàn giao thiết bị với nội dung như sau:
             </p>
 
             {/* ĐIỀU 1 */}
-            <p style={{ ...S.p, ...S.bold, marginTop: 8, color: '#000' }}>Điều 1. Thông tin thiết bị bàn giao</p>
-            <p style={{ ...S.p, paddingLeft: 20, color: '#000' }}>
-              Bên A bàn giao cho Bên B thiết bị với thông tin cụ thể như sau:
-            </p>
+            <p style={{ ...S.p, ...S.bold, marginTop: 5, color: '#000' }}>Điều 1. Thông tin thiết bị bàn giao</p>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, color: '#000', marginTop: 6 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, color: '#000', marginTop: 3 }}>
               <thead>
                 <tr style={{ background: '#d9d9d9' }}>
-                  <th style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center', width: 36 }}>STT</th>
-                  <th style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center', width: '30%' }}>Thông tin</th>
-                  <th style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center' }}>Nội dung</th>
-                  <th style={{ border: '1px solid #000', padding: '5px 8px', textAlign: 'center', width: 72 }}>Ghi chú</th>
+                  <th style={{ border: '1px solid #000', padding: '3px 6px', textAlign: 'center', width: 32 }}>STT</th>
+                  <th style={{ border: '1px solid #000', padding: '3px 6px', textAlign: 'center', width: '32%' }}>Thông tin</th>
+                  <th style={{ border: '1px solid #000', padding: '3px 6px', textAlign: 'center' }}>Nội dung</th>
+                  <th style={{ border: '1px solid #000', padding: '3px 6px', textAlign: 'center', width: 60 }}>Ghi chú</th>
                 </tr>
               </thead>
               <tbody>
                 {deviceRows.map((row, i) => (
                   <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f9f9f9' }}>
-                    <td style={{ border: '1px solid #000', padding: '4px 8px', textAlign: 'center' }}>{i + 1}</td>
-                    <td style={{ border: '1px solid #000', padding: '4px 8px' }}>{row.label}</td>
-                    <td style={{ border: '1px solid #000', padding: '4px 8px', fontWeight: i < 5 ? 'bold' : 'normal' }}>{row.value}</td>
-                    <td style={{ border: '1px solid #000', padding: '4px 8px' }}></td>
+                    <td style={{ border: '1px solid #000', padding: '2px 6px', textAlign: 'center' }}>{i + 1}</td>
+                    <td style={{ border: '1px solid #000', padding: '2px 6px' }}>{row.label}</td>
+                    <td style={{ border: '1px solid #000', padding: '2px 6px', fontWeight: i < 5 ? 'bold' : 'normal' }}>{row.value}</td>
+                    <td style={{ border: '1px solid #000', padding: '2px 6px' }}></td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <p style={{ ...S.p, paddingLeft: 20, marginTop: 4, color: '#000' }}>
+            <p style={{ ...S.p, paddingLeft: 16, marginTop: 3, color: '#000' }}>
               - Ngày bàn giao: <strong>{assignDate.toLocaleDateString('vi-VN')}</strong>
-              {assignment?.notes ? <span> &nbsp;– Ghi chú: {assignment.notes}</span> : null}
+              {assignment?.notes ? <span> – Ghi chú: {assignment.notes}</span> : null}
             </p>
 
             {/* ĐIỀU 2 */}
-            <p style={{ ...S.p, ...S.bold, marginTop: 8, color: '#000' }}>Điều 2. Trách nhiệm của bên nhận</p>
+            <p style={{ ...S.p, ...S.bold, marginTop: 5, color: '#000' }}>Điều 2. Trách nhiệm của bên nhận</p>
             {[
               'Sử dụng thiết bị đúng mục đích công việc, không sử dụng cho mục đích cá nhân.',
               'Bảo quản thiết bị cẩn thận, tránh để hư hỏng, mất mát do nguyên nhân chủ quan.',
@@ -238,33 +235,33 @@ export default function HandoverPrintPage() {
               'Bàn giao lại thiết bị cho Phòng CNTT khi thôi việc, chuyển công tác hoặc khi có yêu cầu.',
               'Thông báo ngay cho Phòng CNTT khi có sự cố liên quan đến thiết bị được giao.',
             ].map((text, i) => (
-              <p key={i} style={{ ...S.p, paddingLeft: 20, color: '#000' }}>{i + 1}. {text}</p>
+              <p key={i} style={{ ...S.p, paddingLeft: 16, color: '#000' }}>{i + 1}. {text}</p>
             ))}
 
             {/* ĐIỀU 3 */}
-            <p style={{ ...S.p, ...S.bold, marginTop: 8, color: '#000' }}>Điều 3. Điều khoản chung</p>
-            <p style={{ ...S.p, paddingLeft: 20, color: '#000' }}>
+            <p style={{ ...S.p, ...S.bold, marginTop: 5, color: '#000' }}>Điều 3. Điều khoản chung</p>
+            <p style={{ ...S.p, paddingLeft: 16, color: '#000' }}>
               Biên bản này được lập thành <strong>02 (hai) bản</strong> có giá trị pháp lý như nhau;
               Bên A giữ 01 bản, Bên B giữ 01 bản. Biên bản có hiệu lực kể từ ngày hai bên ký tên.
             </p>
 
             {/* KÝ TÊN */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20, color: '#000', fontSize: 13 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 10, color: '#000', fontSize: 12 }}>
               <tbody>
                 <tr>
                   <td style={{ width: '50%', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase' }}>Bên giao</td>
                   <td style={{ width: '50%', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase' }}>Bên nhận</td>
                 </tr>
                 <tr>
-                  <td style={{ textAlign: 'center', fontStyle: 'italic', fontSize: 12, paddingBottom: 4 }}>(Ký, ghi rõ họ tên)</td>
-                  <td style={{ textAlign: 'center', fontStyle: 'italic', fontSize: 12, paddingBottom: 4 }}>(Ký, ghi rõ họ tên)</td>
+                  <td style={{ textAlign: 'center', fontStyle: 'italic', fontSize: 11 }}>(Ký, ghi rõ họ tên)</td>
+                  <td style={{ textAlign: 'center', fontStyle: 'italic', fontSize: 11 }}>(Ký, ghi rõ họ tên)</td>
                 </tr>
-                <tr><td style={{ height: 60 }}></td><td></td></tr>
+                <tr><td style={{ height: 50 }}></td><td></td></tr>
                 <tr>
-                  <td style={{ textAlign: 'center', borderTop: '1px solid #555', paddingTop: 6 }}>
+                  <td style={{ textAlign: 'center', borderTop: '1px solid #555', paddingTop: 4 }}>
                     <div style={{ fontWeight: 'bold' }}>Đại diện Phòng CNTT</div>
                   </td>
-                  <td style={{ textAlign: 'center', borderTop: '1px solid #555', paddingTop: 6 }}>
+                  <td style={{ textAlign: 'center', borderTop: '1px solid #555', paddingTop: 4 }}>
                     <div style={{ fontWeight: 'bold' }}>{emp?.full_name || '......................................'}</div>
                   </td>
                 </tr>
@@ -285,7 +282,7 @@ export default function HandoverPrintPage() {
 
       <style>{`
         @media print {
-          @page { size: A4 portrait; margin: 20mm 20mm 20mm 25mm; }
+          @page { size: A4 portrait; margin: 14mm 18mm 14mm 22mm; }
           html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
           body > * { display: none !important; }
           body > div:last-of-type { display: block !important; }
