@@ -1,0 +1,84 @@
+export type DeviceCategory = 'laptop' | 'monitor' | 'pc' | 'peripheral' | 'printer' | 'networking' | 'component' | 'ups' | 'other'
+export type DeviceStatus = 'in_use' | 'in_stock' | 'broken' | 'liquidated'
+export type UserRole = 'admin' | 'it_staff' | 'viewer'
+
+export interface Department {
+  id: string
+  name: string
+  created_at: string
+}
+
+export interface Employee {
+  id: string
+  full_name: string
+  email?: string
+  phone?: string
+  department_id?: string
+  employee_code?: string
+  is_active: boolean
+  created_at: string
+  department?: Department
+}
+
+export interface LaptopSpecs {
+  device_id: string
+  cpu?: string
+  ram?: string
+  storage?: string
+  display?: string
+  os?: string
+  gpu?: string
+}
+
+export interface MonitorSpecs {
+  device_id: string
+  screen_size?: string
+  resolution?: string
+  panel_type?: string
+  refresh_rate?: string
+}
+
+export interface Device {
+  id: string
+  asset_code: string
+  category: DeviceCategory
+  brand: string
+  model: string
+  serial_number?: string
+  status: DeviceStatus
+  purchase_date?: string
+  purchase_price?: number
+  warranty_expiry?: string
+  notes?: string
+  image_url?: string
+  qr_code: string
+  quantity: number
+  created_at: string
+  updated_at: string
+  laptop_specs?: LaptopSpecs
+  monitor_specs?: MonitorSpecs
+  current_assignment?: Assignment
+}
+
+export interface Assignment {
+  id: string
+  device_id: string
+  employee_id: string
+  assigned_date: string
+  returned_date?: string
+  assigned_by?: string
+  returned_by?: string
+  notes?: string
+  is_active: boolean
+  quantity: number
+  created_at: string
+  employee?: Employee
+  device?: Device
+}
+
+export interface Profile {
+  id: string
+  full_name?: string
+  role: UserRole
+  created_at: string
+}
