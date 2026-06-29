@@ -1,20 +1,22 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Plus, Upload, User, Building2 } from 'lucide-react'
+import { Search, Plus, Upload, User, Building2, QrCode } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { Employee } from '@/lib/types'
 import { useRole } from '@/lib/hooks/useRole'
 
-// Chuẩn hóa tiếng Việt — bỏ dấu, lowercase
 function normalizeVi(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, m => m === 'đ' ? 'd' : 'D').toLowerCase()
 }
 
 export default function EmployeesPage() {
   const { isAdmin } = useRole()
+  const router = useRouter()
   const [allEmployees, setAllEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetch('/api/employees')
@@ -22,7 +24,6 @@ export default function EmployeesPage() {
       .then(json => { setAllEmployees((json.data as Employee[]) || []); setLoading(false) })
   }, [])
 
-  // Filter client-side với normalize — gõ "hau" ra "Hậu"
   const employees = useMemo(() => {
     if (!search.trim()) return allEmployees
     const q = normalizeVi(search)
@@ -40,6 +41,17 @@ export default function EmployeesPage() {
     return acc
   }, {})
 
+  function toggleSelect(id: string) {
+    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+  }
+  function toggleAll() {
+    setSelected(prev => prev.size === employees.length ? new Set() : new Set(employees.map(e => e.id)))
+  }
+  function handlePrintQR() {
+    const ids = Array.from(selected).join(',')
+    router.push(`/dashboard/employees/print-qr?ids=${ids}`)
+  }
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -49,20 +61,20 @@ export default function EmployeesPage() {
             {loading ? '...' : `${employees.length} nhân viên · ${Object.keys(grouped).length} phòng ban`}
           </p>
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <Link href="/dashboard/employees/import"
-              className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
-              <Upload size={15} />
-              Import Excel
-            </Link>
-            <Link href="/dashboard/employees/new"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
-              <Plus size={15} />
-              Thêm nhân viên
-            </Link>
-          </div>
-        )}
+        <div className="flex gap-2">
+          {isAdmin && (
+            <>
+              <Link href="/dashboard/employees/import"
+                className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
+                <Upload size={15} /> Import Excel
+              </Link>
+              <Link href="/dashboard/employees/new"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                <Plus size={15} /> Thêm nhân viên
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Search */}
@@ -70,12 +82,27 @@ export default function EmployeesPage() {
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
         <input
           type="text"
-          placeholder="Tìm tên, họ, phòng ban... (không cần dấu)"
+          placeholder="Tìm tên, mã NV, phòng ban... (không cần dấu)"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
         />
       </div>
+
+      {/* Action bar khi có chọn */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-blue-600/10 border border-blue-500/30 rounded-xl">
+          <span className="text-sm text-blue-300 flex-1">Đã chọn <strong>{selected.size}</strong> nhân viên</span>
+          <button onClick={handlePrintQR}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <QrCode size={15} /> In QR ({selected.size})
+          </button>
+          <button onClick={() => setSelected(new Set())}
+            className="text-sm text-gray-400 hover:text-white border border-gray-700 px-3 py-2 rounded-lg transition-colors">
+            Bỏ chọn
+          </button>
+        </div>
+      )}
 
       {loading && (
         <div className="space-y-4">
@@ -97,6 +124,12 @@ export default function EmployeesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 text-gray-400 text-left">
+                    <th className="px-4 py-3 w-10">
+                      <input type="checkbox"
+                        checked={employees.length > 0 && selected.size === employees.length}
+                        onChange={toggleAll}
+                        className="rounded border-gray-600 bg-gray-800 accent-blue-500 cursor-pointer" />
+                    </th>
                     <th className="px-4 py-3 font-medium">Nhân viên</th>
                     <th className="px-4 py-3 font-medium">Mã NV</th>
                     <th className="px-4 py-3 font-medium">Phòng ban</th>
@@ -105,7 +138,10 @@ export default function EmployeesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map(emp => <EmployeeRow key={emp.id} emp={emp} />)}
+                  {employees.map(emp => (
+                    <EmployeeRow key={emp.id} emp={emp}
+                      selected={selected.has(emp.id)} onToggle={() => toggleSelect(emp.id)} />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -119,7 +155,10 @@ export default function EmployeesPage() {
                 </div>
                 <table className="w-full text-sm">
                   <tbody>
-                    {emps.map(emp => <EmployeeRow key={emp.id} emp={emp} />)}
+                    {emps.map(emp => (
+                      <EmployeeRow key={emp.id} emp={emp}
+                        selected={selected.has(emp.id)} onToggle={() => toggleSelect(emp.id)} />
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -131,13 +170,20 @@ export default function EmployeesPage() {
   )
 }
 
-function EmployeeRow({ emp }: { emp: Employee }) {
+function EmployeeRow({ emp, selected, onToggle }: { emp: Employee; selected: boolean; onToggle: () => void }) {
   const dept = emp.department as { name: string } | undefined
   return (
     <tr
-      className="border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors cursor-pointer"
-      onClick={() => window.location.href = `/dashboard/employees/${emp.id}`}
+      className={`border-b border-gray-800/50 hover:bg-gray-800/40 transition-colors cursor-pointer ${selected ? 'bg-blue-600/5' : ''}`}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return
+        window.location.href = `/dashboard/employees/${emp.id}`
+      }}
     >
+      <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
+        <input type="checkbox" checked={selected} onChange={onToggle}
+          className="rounded border-gray-600 bg-gray-800 accent-blue-500 cursor-pointer" />
+      </td>
       <td className="px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-full bg-blue-600/20 flex items-center justify-center shrink-0 text-blue-400 text-xs font-medium">
