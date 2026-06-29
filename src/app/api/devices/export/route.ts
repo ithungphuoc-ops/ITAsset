@@ -33,19 +33,20 @@ export async function GET() {
     in_use: 'Đang dùng', in_stock: 'Trong kho', broken: 'Hỏng', liquidated: 'Thanh lý',
   }
 
+  type SpecRow = Record<string, string>
   type DeviceRow = {
     asset_code: string; category: string; brand: string; model: string
     serial_number?: string; status: string; purchase_date?: string
     purchase_price?: number; warranty_expiry?: string; notes?: string
-    laptop_specs?: Record<string, string> | null
-    monitor_specs?: Record<string, string> | null
+    laptop_specs?: SpecRow[] | SpecRow | null
+    monitor_specs?: SpecRow[] | SpecRow | null
     assignments?: Array<{ is_active: boolean; assigned_date: string; employee?: { full_name: string; employee_code: string; department?: { name: string } } }>
   }
 
-  const rows = ((allDevices || []) as DeviceRow[]).map(d => {
+  const rows = ((allDevices || []) as unknown as DeviceRow[]).map(d => {
     const active = d.assignments?.find(a => a.is_active)
-    const ls = d.laptop_specs as Record<string, string> | null
-    const ms = d.monitor_specs as Record<string, string> | null
+    const ls = (Array.isArray(d.laptop_specs) ? d.laptop_specs[0] : d.laptop_specs) as SpecRow | null
+    const ms = (Array.isArray(d.monitor_specs) ? d.monitor_specs[0] : d.monitor_specs) as SpecRow | null
     return {
       'Mã tài sản': d.asset_code,
       'Loại': CATEGORY[d.category] || d.category,
