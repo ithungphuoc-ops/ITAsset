@@ -1,28 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getEmployeeById, updateEmployee, deactivateEmployee, toEmployeeJson } from '@/lib/firestore/employees'
+import { listAssignmentsForEmployee, toAssignmentJson } from '@/lib/firestore/assignments'
+import { requireSession, requireWriteAccess } from '@/lib/session'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await requireSession()
     const { id } = await params
-    const { data: employee, error } = await supabase
-      .from('employees')
-      .select('*, department:departments(*)')
-      .eq('id', id)
-      .single()
-    if (error) throw error
+    const employee = await getEmployeeById(id)
+    if (!employee) return NextResponse.json({ error: 'Không tìm thấy nhân viên' }, { status: 404 })
 
-    const { data: assignments } = await supabase
-      .from('assignments')
-      .select('*, device:devices(id, asset_code, brand, model, category, status)')
-      .eq('employee_id', id)
-      .order('assigned_date', { ascending: false })
-
-    return NextResponse.json({ data: employee, assignments: assignments || [] })
+    const assignments = await listAssignmentsForEmployee(id)
+    return NextResponse.json({
+      data: await toEmployeeJson(employee),
+      assignments: await Promise.all(assignments.map((a) => toAssignmentJson(a, { withDevice: true }))),
+    })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
@@ -30,16 +22,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await requireWriteAccess()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+
+  try {
     const { id } = await params
     const body = await req.json()
-    const { data, error } = await supabase
-      .from('employees')
-      .update(body)
-      .eq('id', id)
-      .select()
-      .single()
-    if (error) throw error
-    return NextResponse.json({ data })
+    await updateEmployee(id, {
+      fullName: body.full_name,
+      email: body.email,
+      phone: body.phone,
+      departmentId: body.department_id,
+      employeeCode: body.employee_code,
+    })
+    const employee = await getEmployeeById(id)
+    return NextResponse.json({ data: employee ? await toEmployeeJson(employee) : null })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
@@ -47,9 +46,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await requireWriteAccess()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+
+  try {
     const { id } = await params
-    const { error } = await supabase.from('employees').update({ is_active: false }).eq('id', id)
-    if (error) throw error
+    await deactivateEmployee(id)
     return NextResponse.json({ success: true })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

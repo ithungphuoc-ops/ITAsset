@@ -1,113 +1,64 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { User, Lock, Shield, Eye, EyeOff, Plus, Trash2, RefreshCw, Users, Check, Ban } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { Shield, Plus, Trash2, Users, Check, ExternalLink } from 'lucide-react'
 
 type Tab = 'account' | 'users'
-interface AppUser {
-  id: string; email: string; role: string; name: string
-  created_at: string; last_sign_in_at: string; banned: boolean
-}
+type Role = 'admin' | 'it_staff' | 'viewer'
+interface AppUser { email: string; role: Role; name: string }
+
+const ROLE_LABEL: Record<Role, string> = { admin: 'Admin', it_staff: 'IT Staff', viewer: 'Chỉ xem' }
+const ROLE_OPTS: Role[] = ['viewer', 'it_staff', 'admin']
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('account')
-
   return (
     <div className="p-8 max-w-3xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Cài đặt</h1>
-        <p className="text-gray-400 text-sm mt-1">Quản lý tài khoản và bảo mật</p>
+        <p className="text-gray-400 text-sm mt-1">Tài khoản & phân quyền</p>
       </div>
-
-      {/* Tabs */}
       <div className="flex gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 mb-6 w-fit">
-        {([['account', 'Tài khoản của tôi'], ['users', 'Quản lý người dùng']] as [Tab, string][]).map(([t, label]) => (
+        {([['account', 'Tài khoản của tôi'], ['users', 'Phân quyền']] as [Tab, string][]).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}>
             {label}
           </button>
         ))}
       </div>
-
       {tab === 'account' ? <AccountTab /> : <UsersTab />}
     </div>
   )
 }
 
 function AccountTab() {
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPw, setShowPw] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-
-  async function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault()
-    if (newPassword !== confirmPassword) { setMessage({ type: 'error', text: 'Mật khẩu xác nhận không khớp' }); return }
-    if (newPassword.length < 6) { setMessage({ type: 'error', text: 'Mật khẩu phải ít nhất 6 ký tự' }); return }
-    setLoading(true); setMessage(null)
-    try {
-      const { error } = await createClient().auth.updateUser({ password: newPassword })
-      if (error) throw error
-      setMessage({ type: 'success', text: 'Đổi mật khẩu thành công!' })
-      setNewPassword(''); setConfirmPassword('')
-    } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Lỗi' })
-    } finally { setLoading(false) }
-  }
-
+  const [me, setMe] = useState<{ email: string; name: string; role: string | null } | null>(null)
+  useEffect(() => { fetch('/api/auth/me').then(r => r.json()).then(setMe) }, [])
+  const roleLabel = me?.role ? (ROLE_LABEL[me.role as Role] ?? me.role) : 'Nhân viên'
   return (
     <div className="space-y-6">
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4"><User size={16} className="text-blue-400" /><h2 className="font-semibold">Tài khoản</h2></div>
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center text-blue-400 font-bold text-lg">IT</div>
-          <div>
-            <p className="font-medium">HPCONS IT Admin</p>
-            <p className="text-sm text-gray-400">ithungphuoc@hpcons.com.vn</p>
+          <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center text-blue-400 font-bold text-lg">
+            {(me?.name || me?.email || 'U').charAt(0).toUpperCase()}
           </div>
-          <span className="ml-auto text-xs bg-blue-500/20 text-blue-400 px-2.5 py-1 rounded-full">Admin</span>
+          <div>
+            <p className="font-medium">{me?.name || '—'}</p>
+            <p className="text-sm text-gray-400">{me?.email || ''}</p>
+          </div>
+          <span className="ml-auto text-xs bg-blue-500/20 text-blue-400 px-2.5 py-1 rounded-full">{roleLabel}</span>
         </div>
       </div>
-
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-5"><Lock size={16} className="text-blue-400" /><h2 className="font-semibold">Đổi mật khẩu</h2></div>
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Mật khẩu mới</label>
-            <div className="relative">
-              <input type={showPw ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự" required
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
-              <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Xác nhận mật khẩu mới</label>
-            <input type={showPw ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="Nhập lại mật khẩu mới" required
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
-          </div>
-          {message && (
-            <div className={`rounded-lg px-3 py-2 text-sm ${message.type === 'success' ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
-              {message.text}
-            </div>
-          )}
-          <button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            {loading ? 'Đang lưu...' : 'Đổi mật khẩu'}
-          </button>
-        </form>
-      </div>
-
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4"><Shield size={16} className="text-blue-400" /><h2 className="font-semibold">Bảo mật</h2></div>
+        <div className="flex items-center gap-3 mb-4"><Shield size={16} className="text-blue-400" /><h2 className="font-semibold">Đăng nhập & bảo mật</h2></div>
         <div className="space-y-3 text-sm text-gray-400">
-          <div className="flex items-center justify-between py-2 border-b border-gray-800"><span>Xác thực</span><span className="text-green-400">Email + Mật khẩu</span></div>
-          <div className="flex items-center justify-between py-2 border-b border-gray-800"><span>Session</span><span className="text-gray-300">Tự động hết hạn sau 30 ngày</span></div>
-          <div className="flex items-center justify-between py-2"><span>Phân quyền</span><span className="text-blue-400">Admin toàn quyền</span></div>
+          <div className="flex items-center justify-between py-2 border-b border-gray-800"><span>Phương thức</span><span className="text-green-400">Tài khoản chung HP Cons (SSO)</span></div>
+          <div className="flex items-center justify-between py-2"><span>Đổi mật khẩu</span>
+            <a href="https://account.hpcore.vn/dashboard/profile" target="_blank" rel="noopener noreferrer" className="text-blue-400 inline-flex items-center gap-1 hover:underline">
+              Quản lý tại app tổng <ExternalLink size={12} />
+            </a>
+          </div>
         </div>
+        <p className="text-xs text-gray-500 mt-4">Đăng nhập ITAsset dùng chung tài khoản với account.hpcore.vn. Mật khẩu do app tổng quản lý.</p>
       </div>
     </div>
   )
@@ -116,177 +67,112 @@ function AccountTab() {
 function UsersTab() {
   const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '', name: '', role: 'employee' })
-  const [resetId, setResetId] = useState<string | null>(null)
-  const [resetPw, setResetPw] = useState('')
-  const [resetting, setResetting] = useState(false)
+  const [form, setForm] = useState<{ email: string; name: string; role: Role }>({ email: '', name: '', role: 'viewer' })
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  async function loadUsers() {
+  async function load() {
     setLoading(true)
     const res = await fetch('/api/admin/users')
     const json = await res.json()
     setUsers(json.data || [])
     setLoading(false)
   }
+  useEffect(() => { load() }, [])
 
-  useEffect(() => { loadUsers() }, [])
-
-  async function handleCreate(e: React.FormEvent) {
+  async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
-    setCreating(true); setError('')
+    setSaving(true); setError('')
     const res = await fetch('/api/admin/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
     })
     const json = await res.json()
-    if (!res.ok) { setError(json.error); setCreating(false); return }
-    setSuccess('Tạo tài khoản thành công!')
-    setShowCreate(false); setForm({ email: '', password: '', name: '', role: 'employee' })
-    setCreating(false); loadUsers()
-    setTimeout(() => setSuccess(''), 3000)
+    setSaving(false)
+    if (!res.ok) { setError(json.error || 'Lỗi'); return }
+    setForm({ email: '', name: '', role: 'viewer' })
+    setSuccess('Đã cấp quyền!'); setTimeout(() => setSuccess(''), 3000)
+    load()
   }
 
-  async function handleBan(id: string, banned: boolean) {
-    await fetch(`/api/admin/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ banned: !banned }) })
-    loadUsers()
+  async function changeRole(email: string, role: Role) {
+    await fetch(`/api/admin/users/${encodeURIComponent(email)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }),
+    })
+    load()
   }
 
-  async function handleDelete(id: string, email: string) {
-    if (!confirm(`Xóa tài khoản ${email}?`)) return
-    await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
-    loadUsers()
-  }
-
-  async function handleReset(e: React.FormEvent) {
-    e.preventDefault()
-    if (!resetId) return
-    setResetting(true)
-    await fetch(`/api/admin/users/${resetId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: resetPw }) })
-    setResetting(false); setResetId(null); setResetPw('')
-    setSuccess('Đặt lại mật khẩu thành công!')
-    setTimeout(() => setSuccess(''), 3000)
+  async function remove(email: string) {
+    if (!confirm(`Gỡ quyền dashboard của ${email}? (trở lại nhân viên thường, chỉ xem thiết bị của mình)`)) return
+    await fetch(`/api/admin/users/${encodeURIComponent(email)}`, { method: 'DELETE' })
+    load()
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2"><Users size={16} className="text-blue-400" /><span className="font-semibold">Danh sách tài khoản</span><span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">{users.length}</span></div>
-        <button onClick={() => setShowCreate(s => !s)} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <Plus size={14} /> Tạo tài khoản
-        </button>
+    <div className="space-y-4">
+      <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 text-xs text-blue-300/80">
+        Đăng nhập dùng chung với app tổng. Ở đây chỉ cấp <b>vai trò dashboard</b> (Chỉ xem / IT Staff / Admin) theo email.
+        Email chưa được cấp = nhân viên thường (chỉ xem thiết bị của mình ở /my-devices).
       </div>
 
-      {success && <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 text-green-400 text-sm mb-4 flex items-center gap-2"><Check size={14} />{success}</div>}
+      {/* Cấp quyền */}
+      <form onSubmit={handleAssign} className="bg-gray-900 border border-gray-800 rounded-xl p-5 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto] gap-3 items-end">
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Email *</label>
+          <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@hpcons.com.vn" required
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Họ tên (tuỳ chọn)</label>
+          <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nguyễn Văn A"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">Vai trò</label>
+          <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as Role }))}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+            {ROLE_OPTS.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+          </select>
+        </div>
+        <button type="submit" disabled={saving} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          <Plus size={14} /> {saving ? '...' : 'Cấp quyền'}
+        </button>
+      </form>
 
-      {/* Form tạo mới */}
-      {showCreate && (
-        <form onSubmit={handleCreate} className="bg-gray-900 border border-blue-500/30 rounded-xl p-5 mb-4 space-y-3">
-          <p className="text-sm font-medium text-blue-400 mb-3">Tạo tài khoản mới</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Họ tên</label>
-              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nguyễn Văn A"
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Vai trò</label>
-              <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                <option value="employee">Nhân viên (chỉ xem)</option>
-                <option value="admin">Admin (toàn quyền)</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Email *</label>
-            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@hpcons.com.vn" required
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Mật khẩu *</label>
-            <input type="text" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Tối thiểu 6 ký tự" required
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
-          </div>
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-          <div className="flex gap-2">
-            <button type="submit" disabled={creating} className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              {creating ? 'Đang tạo...' : 'Tạo tài khoản'}
-            </button>
-            <button type="button" onClick={() => setShowCreate(false)} className="border border-gray-700 hover:border-gray-500 px-4 py-2 rounded-lg text-sm transition-colors">Hủy</button>
-          </div>
-        </form>
-      )}
-
-      {/* Reset password modal */}
-      {resetId && (
-        <form onSubmit={handleReset} className="bg-gray-900 border border-yellow-500/30 rounded-xl p-5 mb-4 space-y-3">
-          <p className="text-sm font-medium text-yellow-400 mb-1">Đặt lại mật khẩu</p>
-          <input type="text" value={resetPw} onChange={e => setResetPw(e.target.value)} placeholder="Mật khẩu mới" required
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500" />
-          <div className="flex gap-2">
-            <button type="submit" disabled={resetting} className="bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              {resetting ? 'Đang lưu...' : 'Xác nhận'}
-            </button>
-            <button type="button" onClick={() => setResetId(null)} className="border border-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">Hủy</button>
-          </div>
-        </form>
-      )}
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {success && <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-3 py-2 text-green-400 text-sm flex items-center gap-2"><Check size={14} />{success}</div>}
 
       {/* Danh sách */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
+          <Users size={15} className="text-blue-400" />
+          <span className="font-medium text-sm">Người có quyền dashboard</span>
+          <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">{users.length}</span>
+        </div>
         {loading ? (
           <div className="py-10 text-center text-gray-500 text-sm">Đang tải...</div>
+        ) : users.length === 0 ? (
+          <div className="py-10 text-center text-gray-500 text-sm">Chưa cấp quyền dashboard cho ai</div>
         ) : (
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800 text-gray-400 text-left">
-                <th className="px-4 py-3 font-medium">Người dùng</th>
-                <th className="px-4 py-3 font-medium">Vai trò</th>
-                <th className="px-4 py-3 font-medium">Đăng nhập lần cuối</th>
-                <th className="px-4 py-3 font-medium">Trạng thái</th>
-                <th className="px-4 py-3 font-medium w-32"></th>
-              </tr>
-            </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                <tr key={u.email} className="border-b border-gray-800/50 hover:bg-gray-800/30">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-white">{u.name || '—'}</div>
-                    <div className="text-xs text-gray-400">{u.email}</div>
+                    <div className="font-medium text-white">{u.name || u.email}</div>
+                    {u.name && <div className="text-xs text-gray-400">{u.email}</div>}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full ${u.role === 'admin' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700 text-gray-300'}`}>
-                      {u.role === 'admin' ? 'Admin' : 'Nhân viên'}
-                    </span>
+                    <select value={u.role} onChange={e => changeRole(u.email, e.target.value as Role)}
+                      className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500">
+                      {ROLE_OPTS.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                    </select>
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-400">
-                    {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('vi-VN') : 'Chưa đăng nhập'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full ${u.banned ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                      {u.banned ? 'Đã khóa' : 'Hoạt động'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => { setResetId(u.id); setResetPw('') }} title="Reset mật khẩu"
-                        className="p-1.5 text-gray-500 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors">
-                        <RefreshCw size={13} />
-                      </button>
-                      <button onClick={() => handleBan(u.id, u.banned)} title={u.banned ? 'Mở khóa' : 'Khóa tài khoản'}
-                        className="p-1.5 text-gray-500 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors">
-                        <Ban size={13} />
-                      </button>
-                      <button onClick={() => handleDelete(u.id, u.email || '')} title="Xóa tài khoản"
-                        className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => remove(u.email)} title="Gỡ quyền dashboard"
+                      className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                      <Trash2 size={13} />
+                    </button>
                   </td>
                 </tr>
               ))}

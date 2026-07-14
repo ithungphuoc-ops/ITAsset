@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Monitor, Users, QrCode, Settings, LogOut } from 'lucide-react'
 import { useRole } from '@/lib/hooks/useRole'
 
@@ -14,13 +14,12 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter()
-  const { isAdmin, role } = useRole()
+  const { isAdmin, isItStaff, isViewer } = useRole()
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-    router.refresh()
+    // Đăng xuất chung → về trang đăng nhập app tổng
+    window.location.href = 'https://account.hpcore.vn/login'
   }
 
   const isHandover = pathname.endsWith('/handover')
@@ -50,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Role badge */}
         <div className="px-4 py-3 border-t border-gray-800/50">
           <span className={`text-xs px-2 py-1 rounded-full ${isAdmin ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700 text-gray-400'}`}>
-            {isAdmin ? 'Admin' : role === 'employee' ? 'Chỉ xem' : ''}
+            {isAdmin ? 'Admin' : isItStaff ? 'IT Staff' : isViewer ? 'Chỉ xem' : ''}
           </span>
         </div>
         <div className="px-3 py-4 border-t border-gray-800">

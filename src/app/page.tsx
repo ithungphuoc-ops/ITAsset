@@ -10,9 +10,9 @@ export default function HomePage() {
           <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm">IT</div>
           <span className="text-xl font-semibold tracking-tight">ITAsset</span>
         </div>
-        <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
+        <a href="https://account.hpcore.vn/login" className="text-sm text-gray-400 hover:text-white transition-colors">
           Đăng nhập
-        </Link>
+        </a>
       </header>
 
       {/* Hero */}

@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// Đăng nhập qua SSO app tổng (account.hpcore.vn) — không còn Firebase Auth
+// riêng của ITAsset ở phía client (đã xoá lib/firebase/client.ts). Mọi đọc/ghi
+// Firestore đều đi qua Admin SDK ở server (Route Handlers, xem src/lib/session.ts
+// verifyHpcore + src/lib/firestore/*) nên request.auth KHÔNG BAO GIỜ được set
+// cho request thật — Admin SDK bypass hoàn toàn rules này. Vì vậy chặn đứt mọi
+// truy cập trực tiếp từ client thay vì viết logic phân quyền không bao giờ chạy.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,7 +1,9 @@
-import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
-import { User, Monitor, Laptop, Cpu, Package, Building2, Printer, MapPin } from 'lucide-react'
+import { User, Monitor, Laptop, Cpu, Package, Building2, Printer } from 'lucide-react'
 import Link from 'next/link'
+import { getEmployeeById, findEmployeeByEmployeeCode, toEmployeeJson } from '@/lib/firestore/employees'
+import { listActiveAssignmentsForEmployee } from '@/lib/firestore/assignments'
+import { getDeviceById, toDeviceJson } from '@/lib/firestore/devices'
 
 const CATEGORY_LABEL: Record<string, string> = {
   laptop: 'Laptop', monitor: 'Màn hình', pc: 'PC / Máy tính để bàn',
@@ -15,44 +17,14 @@ const CATEGORY_ORDER = ['pc', 'laptop', 'monitor', 'peripheral', 'printer', 'oth
 
 export default async function EmployeePublicPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params
-  const supabase = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
 
   // Tìm nhân viên theo employee_code hoặc id
-  let { data: employee } = await supabase
-    .from('employees')
-    .select('*, department:departments(name)')
-    .eq('employee_code', code)
-    .maybeSingle()
-
-  if (!employee) {
-    const { data: byId } = await supabase
-      .from('employees')
-      .select('*, department:departments(name)')
-      .eq('id', code)
-      .maybeSingle()
-    employee = byId
-  }
-
-  if (!employee) notFound()
+  const found = (await findEmployeeByEmployeeCode(code)) ?? (await getEmployeeById(code))
+  if (!found) notFound()
+  const employee = await toEmployeeJson(found)
 
   // Lấy tất cả thiết bị đang cấp cho nhân viên này
-  const { data: assignments } = await supabase
-    .from('assignments')
-    .select(`
-      id, assigned_date, quantity,
-      device:devices(
-        id, asset_code, qr_code, category, brand, model, serial_number, status, notes,
-        laptop_specs:device_laptop_specs(*),
-        monitor_specs:device_monitor_specs(*)
-      )
-    `)
-    .eq('employee_id', employee.id)
-    .eq('is_active', true)
-    .order('assigned_date', { ascending: false })
+  const activeAssignments = await listActiveAssignmentsForEmployee(found.id)
 
   type DeviceRow = {
     id: string; asset_code: string; qr_code: string; category: string
@@ -61,12 +33,22 @@ export default async function EmployeePublicPage({ params }: { params: Promise<{
     monitor_specs: Record<string, string> | null
     assigned_date: string; quantity: number; assignment_id: string
   }
-  const devices: DeviceRow[] = (assignments || []).map(a => ({
-    ...(a.device as unknown as Omit<DeviceRow, 'assigned_date' | 'quantity' | 'assignment_id'>),
-    assigned_date: a.assigned_date,
-    quantity: a.quantity,
-    assignment_id: a.id,
-  }))
+  const devices: DeviceRow[] = (
+    await Promise.all(
+      activeAssignments
+        .sort((a, b) => b.assignedDate.localeCompare(a.assignedDate))
+        .map(async (a) => {
+          const device = await getDeviceById(a.deviceId)
+          if (!device) return null
+          return {
+            ...(toDeviceJson(device) as unknown as Omit<DeviceRow, 'assigned_date' | 'quantity' | 'assignment_id'>),
+            assigned_date: a.assignedDate,
+            quantity: a.quantity,
+            assignment_id: a.id,
+          }
+        }),
+    )
+  ).filter((d): d is DeviceRow => !!d)
 
   // Group theo category
   const grouped: Record<string, DeviceRow[]> = {}

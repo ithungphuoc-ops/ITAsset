@@ -11,7 +11,7 @@ function normalizeVi(s: string) {
 }
 
 export default function EmployeesPage() {
-  const { isAdmin } = useRole()
+  const { canWrite } = useRole()
   const router = useRouter()
   const [allEmployees, setAllEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +62,7 @@ export default function EmployeesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {isAdmin && (
+          {canWrite && (
             <>
               <Link href="/dashboard/employees/import"
                 className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">

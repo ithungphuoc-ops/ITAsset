@@ -36,7 +36,7 @@ export default function EmployeeDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [form, setForm] = useState({ full_name: '', employee_code: '', email: '', phone: '', department_id: '' })
   const [error, setError] = useState('')
-  const { isAdmin } = useRole()
+  const { canWrite } = useRole()
   const [showAssign, setShowAssign] = useState(false)
   const [availableDevices, setAvailableDevices] = useState<{ id: string; asset_code: string; brand: string; model: string; category: string }[]>([])
   const [deviceSearch, setDeviceSearch] = useState('')
@@ -140,7 +140,7 @@ export default function EmployeeDetailPage() {
         </Link>
         <h1 className="text-2xl font-bold">Chi tiết nhân viên</h1>
         <div className="ml-auto flex gap-2">
-          {!editing && isAdmin && (
+          {!editing && canWrite && (
             <>
               <button onClick={() => setEditing(true)}
                 className="flex items-center gap-1.5 border border-gray-700 hover:border-blue-500 hover:text-blue-400 px-4 py-2 rounded-lg text-sm transition-colors">
@@ -319,7 +319,7 @@ export default function EmployeeDetailPage() {
             Thiết bị đang sử dụng
             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{activeAssignments.length}</span>
           </h3>
-          {isAdmin && (
+          {canWrite && (
             <button onClick={openAssign}
               className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
               <Plus size={13} /> Gán thiết bị

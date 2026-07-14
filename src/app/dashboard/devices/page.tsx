@@ -36,7 +36,7 @@ const CATEGORY_ICON: Record<DeviceCategory, React.ElementType> = {
 }
 
 export default function DevicesPage() {
-  const { isAdmin } = useRole()
+  const { canWrite } = useRole()
   const router = useRouter()
   const [allDevices, setAllDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,7 +104,7 @@ export default function DevicesPage() {
             <FileSpreadsheet size={16} />
             {exporting ? 'Đang xuất...' : 'Export Excel'}
           </button>
-          {isAdmin && (
+          {canWrite && (
             <>
               <Link href="/dashboard/devices/import" className="flex items-center gap-2 border border-gray-700 hover:border-gray-500 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 transition-colors">
                 <Upload size={16} /> Import

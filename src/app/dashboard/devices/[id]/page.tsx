@@ -21,7 +21,7 @@ interface Employee { id: string; full_name: string; employee_code: string; depar
 export default function DeviceDetailPage() {
   const { id } = useParams()
   const router = useRouter()
-  const { isAdmin } = useRole()
+  const { canWrite } = useRole()
   const [device, setDevice] = useState<Device | null>(null)
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,21 +49,13 @@ export default function DeviceDetailPage() {
   const [transferError, setTransferError] = useState('')
 
   const loadPage = useCallback(async () => {
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
-    const { data: dev } = await supabase
-      .from('devices')
-      .select('*, laptop_specs:device_laptop_specs(*), monitor_specs:device_monitor_specs(*)')
-      .eq('id', id).single()
-    if (!dev) { router.push('/dashboard/devices'); return }
-    setDevice(dev as Device)
-    const { data: asgn } = await supabase
-      .from('assignments')
-      .select('*, employee:employees(*, department:departments(*))')
-      .eq('device_id', id).order('created_at', { ascending: false })
-    setAssignments((asgn as Assignment[]) || [])
+    const res = await fetch(`/api/devices/${id}`)
+    const json = await res.json()
+    if (!res.ok || !json.data) { router.push('/dashboard/devices'); return }
+    setDevice(json.data as Device)
+    setAssignments((json.assignments as Assignment[]) || [])
     const QRCode = (await import('qrcode')).default
-    const url = `${window.location.origin}/device/${dev.id}`
+    const url = `${window.location.origin}/device/${json.data.id}`
     const dataUrl = await QRCode.toDataURL(url, { width: 200, margin: 2, color: { dark: '#ffffff', light: '#111827' } })
     setQrDataUrl(dataUrl)
     setLoading(false)
@@ -291,7 +283,7 @@ export default function DeviceDetailPage() {
           </div>
           <p className="text-gray-400 text-sm mt-0.5 font-mono">{device.asset_code}</p>
         </div>
-        {isAdmin && (
+        {canWrite && (
           <div className="flex items-center gap-2">
             {activeAssignment && (
               <Link href={`/dashboard/devices/${id}/handover`}
@@ -365,7 +357,7 @@ export default function DeviceDetailPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Lịch sử cấp phát</h2>
-              {isAdmin && (
+              {canWrite && (
                 <Link href={`/dashboard/devices/${id}/assign`} className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
                   + Cấp phát
                 </Link>
@@ -431,7 +423,7 @@ export default function DeviceDetailPage() {
                   <div className="text-xs text-gray-500 mt-0.5">Từ {new Date(activeAssignment.assigned_date).toLocaleDateString('vi-VN')}</div>
                 </div>
               </div>
-              {isAdmin && (
+              {canWrite && (
                 <div className="space-y-2">
                   <button onClick={openTransferModal}
                     className="w-full flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-lg py-2.5 text-sm font-medium transition-colors">
@@ -448,7 +440,7 @@ export default function DeviceDetailPage() {
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
               <h2 className="font-semibold mb-2 text-sm text-gray-400 uppercase tracking-wide">Người sử dụng</h2>
               <p className="text-gray-500 text-sm mb-4">Thiết bị đang trong kho</p>
-              {isAdmin && (
+              {canWrite && (
                 <Link href={`/dashboard/devices/${id}/assign`}
                   className="block w-full text-center bg-blue-600 hover:bg-blue-500 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">
                   + Cấp phát ngay

@@ -1,64 +1,52 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { sendAssignmentEmail } from '@/lib/mailer'
+import { NextRequest, NextResponse } from 'next/server'
 import QRCode from 'qrcode'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { sendAssignmentEmail } from '@/lib/mailer'
+import { assignDevice, closeActiveAssignment } from '@/lib/firestore/assignments'
+import { getDeviceById } from '@/lib/firestore/devices'
+import { getEmployeeById, toEmployeeJson } from '@/lib/firestore/employees'
+import { requireWriteAccess } from '@/lib/session'
 
 export async function POST(req: NextRequest) {
   try {
+    await requireWriteAccess()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+
+  try {
     const { device_id, employee_id, notes, quantity = 1 } = await req.json()
 
-    // Thu há»“i assignment cÅ© náº¿u cÃ³
-    await supabase.from('assignments')
-      .update({ is_active: false, returned_date: new Date().toISOString().split('T')[0] })
-      .eq('device_id', device_id).eq('is_active', true)
+    await assignDevice({ deviceId: device_id, employeeId: employee_id, notes, quantity })
 
-    // Táº¡o assignment má»›i
-    const { error } = await supabase.from('assignments').insert({
-      device_id, employee_id,
-      assigned_date: new Date().toISOString().split('T')[0],
-      is_active: true,
-      notes: notes || null,
-      quantity: quantity || 1,
-    })
-    if (error) throw error
-
-    // Cáº­p nháº­t tráº¡ng thÃ¡i thiáº¿t bá»‹
-    await supabase.from('devices').update({ status: 'in_use' }).eq('id', device_id)
-
-    // Gá»­i email náº¿u nhÃ¢n viÃªn cÃ³ email
+    // Gửi email nếu nhân viên có email (không chặn nếu gửi lỗi, chỉ log)
     try {
-      const [{ data: device }, { data: employee }] = await Promise.all([
-        supabase.from('devices').select('*').eq('id', device_id).single(),
-        supabase.from('employees').select('*, department:departments(name)').eq('id', employee_id).single(),
-      ])
+      const device = await getDeviceById(device_id)
+      const employee = await getEmployeeById(employee_id)
+      const employeeJson = employee ? await toEmployeeJson(employee) : null
 
-      if (device && employee?.email) {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.startsWith('http://localhost') ? 'https://it-asset-pi.vercel.app' : (process.env.NEXT_PUBLIC_APP_URL || 'https://it-asset-pi.vercel.app')
-        const qrUrl = `${baseUrl}/device/${device.qr_code}`
+      if (device && employeeJson?.email) {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.startsWith('http://localhost')
+          ? 'https://it-asset-pi.vercel.app'
+          : (process.env.NEXT_PUBLIC_APP_URL || 'https://it-asset-pi.vercel.app')
+        const qrUrl = `${baseUrl}/device/${device.qrCode}`
         const qrImageBase64 = await QRCode.toDataURL(qrUrl, {
           width: 300, margin: 2,
           color: { dark: '#1d4ed8', light: '#ffffff' },
         })
 
         await sendAssignmentEmail({
-          toEmail: employee.email,
-          toName: employee.full_name,
+          toEmail: employeeJson.email,
+          toName: employeeJson.full_name,
           deviceBrand: device.brand,
           deviceModel: device.model,
           deviceCategory: device.category,
-          assetCode: device.asset_code,
+          assetCode: device.assetCode,
           assignedDate: new Date().toLocaleDateString('vi-VN'),
           qrImageBase64,
           notes: notes || undefined,
         })
       }
     } catch (mailErr) {
-      // KhÃ´ng block náº¿u gá»­i mail lá»—i, chá»‰ log
       console.error('Email error:', mailErr)
     }
 
@@ -70,17 +58,20 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    await requireWriteAccess()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+
+  try {
     const { device_id, new_status, notes } = await req.json()
-
-    await supabase.from('assignments')
-      .update({ is_active: false, returned_date: new Date().toISOString().split('T')[0], notes: notes || null })
-      .eq('device_id', device_id).eq('is_active', true)
-
-    await supabase.from('devices').update({ status: new_status }).eq('id', device_id)
-
+    await closeActiveAssignment({
+      deviceId: device_id,
+      newStatus: new_status,
+      notes: notes || null,
+    })
     return NextResponse.json({ success: true })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
 }
-

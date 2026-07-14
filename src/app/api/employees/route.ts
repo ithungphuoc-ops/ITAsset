@@ -1,27 +1,34 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from 'next/server'
+import { listActiveEmployees, createEmployee, toEmployeeJson } from '@/lib/firestore/employees'
+import { requireSession, requireWriteAccess } from '@/lib/session'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function normalize(s: string) {
+  return s.toLowerCase()
+}
 
 export async function GET(req: NextRequest) {
+  try {
+    await requireSession()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+
   try {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || ''
 
-    let query = supabase
-      .from('employees')
-      .select('*, department:departments(*)')
-      .eq('is_active', true)
-      .order('full_name')
+    let employees = await listActiveEmployees()
+    if (search) {
+      const q = normalize(search)
+      employees = employees.filter((e) =>
+        normalize(e.fullName).includes(q) ||
+        normalize(e.email || '').includes(q) ||
+        normalize(e.employeeCode || '').includes(q),
+      )
+    }
 
-    if (search) query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,employee_code.ilike.%${search}%`)
-
-    const { data, error } = await query
-    if (error) throw error
-    return NextResponse.json({ data: data || [] })
+    const data = await Promise.all(employees.map(toEmployeeJson))
+    return NextResponse.json({ data })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
@@ -29,12 +36,22 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    await requireWriteAccess()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+
+  try {
     const body = await req.json()
-    const { data, error } = await supabase.from('employees').insert(body).select().single()
-    if (error) throw error
-    return NextResponse.json({ data })
+    const employee = await createEmployee({
+      fullName: body.full_name,
+      email: body.email || null,
+      phone: body.phone || null,
+      departmentId: body.department_id || null,
+      employeeCode: body.employee_code || null,
+    })
+    return NextResponse.json({ data: await toEmployeeJson(employee) })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
 }
-

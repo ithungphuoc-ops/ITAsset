@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Monitor, Laptop, Cpu, Package, LogOut, QrCode } from 'lucide-react'
 
 interface Device {
@@ -29,23 +28,20 @@ export default function MyDevicesPage() {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClient()
-
   async function logout() {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+    await fetch('/api/auth/logout', { method: 'POST' })
+    // Đăng xuất chung → về trang đăng nhập app tổng
+    window.location.href = 'https://account.hpcore.vn/login'
   }
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const meRes = await fetch('/api/auth/me')
+      const me = await meRes.json()
+      if (!me.email) return
+      setName(me.name || me.email || '')
 
-      const displayName = user.user_metadata?.name || user.email || ''
-      setName(displayName)
-
-      // Tìm nhân viên theo email
-      const res = await fetch(`/api/my-devices?email=${encodeURIComponent(user.email || '')}`)
+      const res = await fetch(`/api/my-devices?email=${encodeURIComponent(me.email)}`)
       const json = await res.json()
       setDevices(json.devices || [])
       setEmployeeCode(json.employee_code || null)

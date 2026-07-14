@@ -295,57 +295,14 @@ export default function ImportPage() {
 
   async function handleExcelImport() {
     setImporting(true)
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
-    const res: ImportResult[] = []
-
-    for (let i = 0; i < excelRows.length; i++) {
-      const row = excelRows[i]
-      try {
-        const category = resolveCategory(row.loai_thiet_bi, row.hang, row.model)
-        const qty = parseInt(row.so_luong || '1') || 1
-        const qr_code = `ITASSET-${row.ma_tai_san}-${Date.now()}-${i}`
-
-        const { data: existing } = await supabase
-          .from('devices').select('id, quantity').ilike('brand', row.hang).ilike('model', row.model).maybeSingle()
-
-        if (existing) {
-          await supabase.from('devices').update({ quantity: (existing.quantity || 1) + qty }).eq('id', existing.id)
-          res.push({ row: i + 1, asset_code: row.ma_tai_san, status: 'skip', message: `Trùng sản phẩm — đã cộng thêm x${qty} vào tồn kho` })
-          continue
-        }
-
-        const { data: device, error: devErr } = await supabase.from('devices').insert({
-          asset_code: row.ma_tai_san, category, brand: row.hang, model: row.model,
-          serial_number: row.serial_number || null,
-          purchase_date: row.ngay_mua || null,
-          purchase_price: row.gia_mua_vnd ? parseInt(row.gia_mua_vnd.replace(/\D/g, '')) : null,
-          warranty_expiry: row.bao_hanh_den || null,
-          notes: row.ghi_chu || null,
-          quantity: qty, qr_code, status: 'in_stock',
-        }).select().single()
-        if (devErr) throw devErr
-
-        if (category === 'laptop' && (row.cpu || row.ram || row.o_cung)) {
-          await supabase.from('device_laptop_specs').insert({
-            device_id: device.id, cpu: row.cpu || null, ram: row.ram || null,
-            storage: row.o_cung || null, display: row.man_hinh_laptop || null,
-            os: row.he_dieu_hanh || null, gpu: row.gpu || null,
-          })
-        }
-        if (category === 'monitor' && (row.kich_thuoc_man_hinh || row.do_phan_giai)) {
-          await supabase.from('device_monitor_specs').insert({
-            device_id: device.id, screen_size: row.kich_thuoc_man_hinh || null,
-            resolution: row.do_phan_giai || null, panel_type: row.tam_nen || null,
-            refresh_rate: row.tan_so_quet || null,
-          })
-        }
-        res.push({ row: i + 1, asset_code: row.ma_tai_san, status: 'success', message: `Nhập thành công (x${qty})` })
-      } catch (err) {
-        res.push({ row: i + 1, asset_code: row.ma_tai_san, status: 'error', message: err instanceof Error ? err.message : 'Lỗi' })
-      }
-    }
-    setResults(res)
+    const category = excelRows.map(row => resolveCategory(row.loai_thiet_bi, row.hang, row.model))
+    const res = await fetch('/api/devices/import-excel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows: excelRows, category }),
+    })
+    const json = await res.json()
+    setResults(json.results || [])
     setMode('excel-done')
     setImporting(false)
   }

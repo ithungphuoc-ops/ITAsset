@@ -15,10 +15,13 @@ export default function NewDepartmentPage() {
     setLoading(true)
     setError('')
     try {
-      const { createClient } = await import('@/lib/supabase/client')
-      const supabase = createClient()
-      const { error: err } = await supabase.from('departments').insert({ name })
-      if (err) throw err
+      const res = await fetch('/api/departments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
       router.push('/dashboard/employees/new')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Có lỗi xảy ra')

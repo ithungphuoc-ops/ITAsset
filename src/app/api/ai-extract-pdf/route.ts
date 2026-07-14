@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { requireWriteAccess } from '@/lib/session'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
@@ -101,6 +102,12 @@ async function parseWithClaudeVision(buffer: ArrayBuffer, mimeType: string) {
 }
 
 export async function POST(req: NextRequest) {
+  try {
+    await requireWriteAccess()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File

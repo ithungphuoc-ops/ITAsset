@@ -1,40 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { adminDb } from '@/lib/firebase/admin'
+import { requireAdmin } from '@/lib/session'
+import type { UserRole } from '@/lib/firestore/types'
 
-// Dùng service_role để quản lý user (admin only)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+const DASHBOARD_ROLES: UserRole[] = ['admin', 'it_staff', 'viewer']
 
-// Lấy danh sách tất cả users
+// Danh sách người có quyền dashboard (profiles khoá theo email).
+// Tài khoản đăng nhập do app tổng quản; đây chỉ quản VAI TRÒ trong ITAsset.
 export async function GET() {
-  const { data: { users }, error } = await supabase.auth.admin.listUsers()
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  const list = users.map(u => ({
-    id: u.id,
-    email: u.email,
-    role: u.user_metadata?.role || 'employee',
-    name: u.user_metadata?.name || '',
-    created_at: u.created_at,
-    last_sign_in_at: u.last_sign_in_at,
-    banned: u.banned_until ? new Date(u.banned_until) > new Date() : false,
-  }))
+  try {
+    await requireAdmin()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+  const snap = await adminDb.collection('profiles').get()
+  const list = snap.docs
+    .filter((d) => d.id.includes('@'))
+    .map((d) => ({ email: d.id, role: d.data().role as UserRole, name: d.data().fullName ?? '' }))
+    .sort((a, b) => a.email.localeCompare(b.email))
   return NextResponse.json({ data: list })
 }
 
-// Tạo user mới
+// Cấp / cập nhật vai trò dashboard cho 1 email
 export async function POST(req: NextRequest) {
-  const { email, password, role, name } = await req.json()
-  if (!email || !password) return NextResponse.json({ error: 'Thiếu email hoặc mật khẩu' }, { status: 400 })
+  try {
+    await requireAdmin()
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 403 })
+  }
+  const { email, role, name } = await req.json()
+  const em = String(email || '').trim().toLowerCase()
+  if (!em || !em.includes('@')) return NextResponse.json({ error: 'Email không hợp lệ' }, { status: 400 })
+  if (!DASHBOARD_ROLES.includes(role)) return NextResponse.json({ error: 'Vai trò không hợp lệ' }, { status: 400 })
 
-  const { data, error } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { role: role || 'employee', name: name || '' },
-  })
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-  return NextResponse.json({ data: data.user })
+  await adminDb.collection('profiles').doc(em).set(
+    { email: em, role, fullName: name || '', createdAt: new Date().toISOString() },
+    { merge: true },
+  )
+  return NextResponse.json({ data: { email: em, role, name: name || '' } })
 }

@@ -1,56 +1,49 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { adminDb } from '@/lib/firebase/admin'
+import { verifyHpcore, hpcoreLoginUrl, SSO_COOKIE_NAME } from '@/lib/hpcore'
+
+const DASHBOARD_ROLES = ['admin', 'it_staff', 'viewer']
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const { pathname, search, origin } = request.nextUrl
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+  // Xác minh phiên đăng nhập CHUNG của app tổng (cookie .hpcore.vn)
+  const id = await verifyHpcore(request.cookies.get(SSO_COOKIE_NAME)?.value)
+  let role: string | null = null
+  if (id) {
+    try {
+      const snap = await adminDb.collection('profiles').doc(id.email).get()
+      role = snap.exists ? (snap.data()?.role ?? null) : null
+    } catch {
+      role = null
     }
-  )
+  }
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
-  const role = user?.user_metadata?.role || 'employee'
+  const isLoggedIn = !!id
+  const hasDashboardAccess = !!role && DASHBOARD_ROLES.includes(role)
+  const toHpcoreLogin = () => NextResponse.redirect(hpcoreLoginUrl(origin + pathname + search))
 
-  // Bảo vệ tất cả /dashboard/*
+  // /dashboard/* — phải đăng nhập app tổng VÀ có quyền dashboard
   if (pathname.startsWith('/dashboard')) {
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(url)
-    }
+    if (!isLoggedIn) return toHpcoreLogin()
+    if (!hasDashboardAccess) return NextResponse.redirect(new URL('/my-devices', request.url))
   }
 
-  // Đã login rồi mà vào /login → redirect theo role
-  if (pathname === '/login' && user) {
+  // /my-devices — mọi người đã đăng nhập app tổng đều vào được
+  if (pathname.startsWith('/my-devices') && !isLoggedIn) {
+    return toHpcoreLogin()
+  }
+
+  // /login của ITAsset không còn dùng — điều hướng theo trạng thái
+  if (pathname === '/login') {
+    if (!isLoggedIn) return toHpcoreLogin()
     const url = request.nextUrl.clone()
-    url.pathname = role === 'admin' ? '/dashboard' : '/my-devices'
+    url.pathname = hasDashboardAccess ? '/dashboard' : '/my-devices'
+    url.search = ''
     return NextResponse.redirect(url)
   }
 
-  // Bảo vệ /my-devices — phải login
-  if (pathname.startsWith('/my-devices') && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {

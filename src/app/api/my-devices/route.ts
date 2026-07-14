@@ -1,36 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+import { findEmployeeByEmail } from '@/lib/firestore/employees'
+import { listActiveAssignmentsForEmployee } from '@/lib/firestore/assignments'
+import { getDeviceById } from '@/lib/firestore/devices'
+import { getSession, hasDashboardAccess } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
   const email = req.nextUrl.searchParams.get('email')
   if (!email) return NextResponse.json({ devices: [] })
 
-  // Tìm nhân viên theo email
-  const { data: employee } = await supabase
-    .from('employees')
-    .select('id, employee_code')
-    .eq('email', email)
-    .single()
+  // Chỉ cho xem thiết bị của chính mình, trừ khi có quyền dashboard (admin/it_staff/viewer).
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 })
+  if (session.email !== email && !hasDashboardAccess(session)) {
+    return NextResponse.json({ error: 'Không có quyền xem dữ liệu này' }, { status: 403 })
+  }
 
+  const employee = await findEmployeeByEmail(email)
   if (!employee) return NextResponse.json({ devices: [], employee_code: null })
 
-  // Lấy thiết bị đang cấp phát cho nhân viên này
-  const { data: assignments } = await supabase
-    .from('assignments')
-    .select('assigned_date, device:devices(id, brand, model, asset_code, category, serial_number, status)')
-    .eq('employee_id', employee.id)
-    .eq('is_active', true)
+  const assignments = await listActiveAssignmentsForEmployee(employee.id)
+  const devices = (
+    await Promise.all(
+      assignments.map(async (a) => {
+        const device = await getDeviceById(a.deviceId)
+        if (!device) return null
+        return {
+          id: device.id,
+          brand: device.brand,
+          model: device.model,
+          asset_code: device.assetCode,
+          category: device.category,
+          serial_number: device.serialNumber,
+          status: device.status,
+          assigned_date: a.assignedDate,
+        }
+      }),
+    )
+  ).filter(Boolean)
 
-  const devices = (assignments || []).map((a: any) => ({
-    ...a.device,
-    assigned_date: a.assigned_date,
-  }))
-
-  return NextResponse.json({ devices, employee_code: employee.employee_code })
+  return NextResponse.json({ devices, employee_code: employee.employeeCode })
 }

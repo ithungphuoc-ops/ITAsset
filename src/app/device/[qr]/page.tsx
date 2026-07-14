@@ -1,7 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
-import { Laptop, Monitor, Cpu, Package, User, Calendar, Shield, CheckCircle, AlertTriangle, Building2, ArrowRight, Printer } from 'lucide-react'
+import { Laptop, Monitor, Cpu, Package, User, Calendar, CheckCircle, AlertTriangle, ArrowRight, Printer } from 'lucide-react'
 import Link from 'next/link'
+import { getDeviceById, findDeviceByQrCode, findDeviceByAssetCode, toDeviceJson } from '@/lib/firestore/devices'
+import { getActiveAssignmentForDevice } from '@/lib/firestore/assignments'
+import { getEmployeeById, toEmployeeJson } from '@/lib/firestore/employees'
 
 const CATEGORY_LABEL: Record<string, string> = {
   laptop: 'Laptop', monitor: 'Màn hình', pc: 'PC / Máy tính để bàn',
@@ -14,45 +16,17 @@ const CATEGORY_ICON: Record<string, React.ElementType> = {
 
 export default async function PublicDevicePage({ params }: { params: Promise<{ qr: string }> }) {
   const { qr } = await params
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
 
   // Thử lookup theo id → qr_code → asset_code
-  let { data: device } = await supabase
-    .from('devices')
-    .select('*, laptop_specs:device_laptop_specs(*), monitor_specs:device_monitor_specs(*)')
-    .eq('id', qr)
-    .maybeSingle()
+  const found = (await getDeviceById(qr)) ?? (await findDeviceByQrCode(qr)) ?? (await findDeviceByAssetCode(qr))
+  if (!found) notFound()
 
-  if (!device) {
-    const { data: byQr } = await supabase
-      .from('devices')
-      .select('*, laptop_specs:device_laptop_specs(*), monitor_specs:device_monitor_specs(*)')
-      .eq('qr_code', qr)
-      .maybeSingle()
-    device = byQr
-  }
-
-  if (!device) {
-    const { data: byAsset } = await supabase
-      .from('devices')
-      .select('*, laptop_specs:device_laptop_specs(*), monitor_specs:device_monitor_specs(*)')
-      .eq('asset_code', qr)
-      .maybeSingle()
-    device = byAsset
-  }
-
-  if (!device) notFound()
-
-  const { data: activeAssignment } = await supabase
-    .from('assignments')
-    .select('*, employee:employees(id, full_name, employee_code, department:departments(name))')
-    .eq('device_id', device.id)
-    .eq('is_active', true)
-    .maybeSingle()
+  const device = toDeviceJson(found)
+  const activeAssignmentDoc = await getActiveAssignmentForDevice(found.id)
+  const employeeDoc = activeAssignmentDoc ? await getEmployeeById(activeAssignmentDoc.employeeId) : null
+  const activeAssignment = activeAssignmentDoc && employeeDoc
+    ? { assigned_date: activeAssignmentDoc.assignedDate, employee: await toEmployeeJson(employeeDoc) }
+    : null
 
   const Icon = CATEGORY_ICON[device.category as string] || Package
   const statusColor = {
