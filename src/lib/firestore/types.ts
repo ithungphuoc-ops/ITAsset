@@ -97,4 +97,7 @@ export interface FirestoreProfile {
   fullName: string;
   role: UserRole;
   createdAt: string;
+  // Avatar đồng bộ live từ app tổng (users/{uid}.avatarUrl ở Firestore
+  // hpcons-portal) — không lưu cục bộ, null nếu người dùng chưa có avatar.
+  avatar?: string | null;
 }

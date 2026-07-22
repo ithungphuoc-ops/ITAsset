@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { adminDb } from "@/lib/firebase/admin";
-import { verifyHpcore, getHpcoreDb, SSO_COOKIE_NAME } from "@/lib/hpcore";
+import { verifyHpcore, getHpcoreDb, getCentralAvatar, SSO_COOKIE_NAME } from "@/lib/hpcore";
 import type { FirestoreProfile, UserRole } from "@/lib/firestore/types";
 
 // Cookie phiên do APP TỔNG phát (dùng chung *.hpcore.vn). ITAsset không tự đăng nhập.
@@ -42,10 +42,14 @@ export async function getSession(): Promise<Session | null> {
   const id = await verifyHpcore(cookieStore.get(SESSION_COOKIE_NAME)?.value);
   if (!id) return null;
 
-  const [localProfile, centralRole] = await Promise.all([
+  const [localProfile, centralRole, centralAvatar] = await Promise.all([
     profileByEmail(id.email),
     fetchCentralRole(id.uid),
+    getCentralAvatar(id.uid),
   ]);
+  // Ưu tiên avatar mới nhất từ app tổng; chỉ rơi về giá trị cục bộ (nếu có)
+  // khi app tổng chưa có avatar.
+  const avatar = centralAvatar ?? localProfile?.avatar ?? null;
 
   if (centralRole) {
     const profile: FirestoreProfile = {
@@ -53,11 +57,16 @@ export async function getSession(): Promise<Session | null> {
       fullName: localProfile?.fullName ?? id.email.split("@")[0],
       role: centralRole,
       createdAt: localProfile?.createdAt ?? new Date().toISOString(),
+      avatar,
     };
     return { uid: id.uid, email: id.email, profile };
   }
 
-  return { uid: id.uid, email: id.email, profile: localProfile };
+  return {
+    uid: id.uid,
+    email: id.email,
+    profile: localProfile ? { ...localProfile, avatar } : null,
+  };
 }
 
 export async function requireSession(): Promise<Session> {

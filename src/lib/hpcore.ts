@@ -55,3 +55,20 @@ export async function verifyHpcore(cookie: string | undefined): Promise<{ uid: s
     return null;
   }
 }
+
+/**
+ * Avatar hiện tại của người dùng, đọc TRỰC TIẾP từ Firestore app tổng
+ * (users/{uid}.avatarUrl — nơi app tổng lưu avatar khi người dùng đổi ảnh đại
+ * diện ở trang cá nhân account.hpcore.vn). Đọc "live" ở mỗi lần kiểm tra phiên
+ * (không cache) để avatar mới đồng bộ ngay từ lần đăng nhập/tải trang kế tiếp.
+ * Lỗi đọc cross-project → null, không chặn đăng nhập.
+ */
+export async function getCentralAvatar(uid: string): Promise<string | null> {
+  try {
+    const snap = await getHpcoreDb().collection("users").doc(uid).get();
+    const avatarUrl = snap.data()?.avatarUrl;
+    return typeof avatarUrl === "string" && avatarUrl ? avatarUrl : null;
+  } catch {
+    return null;
+  }
+}

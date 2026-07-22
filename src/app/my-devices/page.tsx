@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Monitor, Laptop, Cpu, Package, LogOut, QrCode } from 'lucide-react'
+import { UserAvatar } from '@/components/UserAvatar'
 
 interface Device {
   id: string; brand: string; model: string; asset_code: string
@@ -26,6 +27,7 @@ export default function MyDevicesPage() {
   const [devices, setDevices] = useState<Device[]>([])
   const [employeeCode, setEmployeeCode] = useState<string | null>(null)
   const [name, setName] = useState('')
+  const [avatar, setAvatar] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   async function logout() {
@@ -40,6 +42,7 @@ export default function MyDevicesPage() {
       const me = await meRes.json()
       if (!me.email) return
       setName(me.name || me.email || '')
+      setAvatar(me.avatar || null)
 
       const res = await fetch(`/api/my-devices?email=${encodeURIComponent(me.email)}`)
       const json = await res.json()
@@ -63,7 +66,7 @@ export default function MyDevicesPage() {
             <p className="text-xs text-gray-400">HPCONS IT Asset</p>
           </div>
         </a>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-sm font-medium">{name}</p>
             {employeeCode && (
@@ -72,6 +75,7 @@ export default function MyDevicesPage() {
               </a>
             )}
           </div>
+          <UserAvatar avatar={avatar} name={name} size={32} />
           <button onClick={logout} className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
             <LogOut size={14} /> Đăng xuất
           </button>
